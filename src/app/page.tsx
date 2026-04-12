@@ -1,64 +1,269 @@
+import Link from "next/link";
 import Image from "next/image";
+import type { Product, Category, Sport } from "@/types/product";
 
-export default function Home() {
+const CATEGORIES: { id: Category | "all"; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "Cricket", label: "Cricket" },
+  { id: "Football", label: "Football" },
+  { id: "Gym", label: "Gym" },
+  { id: "Running", label: "Running" },
+  { id: "Others", label: "Others" },
+];
+
+async function fetchProducts(category?: Category | "all") {
+  const params = category && category !== "all" ? `?category=${encodeURIComponent(category)}` : "";
+  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/products${params}`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    return [] as Product[];
+  }
+
+  return (await res.json()) as Product[];
+}
+
+async function fetchSports() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/sports`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    return [] as Sport[];
+  }
+
+  return (await res.json()) as Sport[];
+}
+
+export default async function Home() {
+  const products = await fetchProducts("all");
+  const sports = await fetchSports();
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="flex-1">
+      <header className="border-b bg-background/70 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+          <Link href="/" className="cursor-pointer flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-background">
+              <span className="text-sm font-semibold">S</span>
+            </div>
+            <span className="text-lg font-semibold tracking-tight text-foreground">Sportify Shop</span>
+          </Link>
+          <nav className="flex items-center gap-4 text-sm font-medium text-foreground">
+            <Link href="#catalog" className="cursor-pointer hover:text-primary">
+              Shop
+            </Link>
+            <Link href="/admin" className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-foreground hover:text-background">
+              Admin
+            </Link>
+          </nav>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl px-4 pb-16 pt-10">
+        <section className="grid gap-10 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:items-center">
+          <div className="space-y-6">
+            <p className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+              New • Multi-sport ecommerce platform
+            </p>
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl text-foreground">
+              Gear up for
+              <span className="block text-primary">Cricket, Football, Gym & more.</span>
+            </h1>
+            <p className="max-w-xl text-sm text-muted-foreground">
+              Browse curated sports equipment across multiple categories with live inventory,
+              multi-currency pricing, and secure Stripe checkout.
+            </p>
+            <div className="flex flex-wrap gap-3 text-sm">
+              <a
+                href="#catalog"
+                className="inline-flex items-center justify-center rounded-full bg-foreground px-5 py-2 text-background hover:bg-foreground/90"
+              >
+                Shop sports items
+              </a>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="flex -space-x-1">
+                  <span className="h-6 w-6 rounded-full bg-primary/20" />
+                  <span className="h-6 w-6 rounded-full bg-green-200 dark:bg-green-800" />
+                  <span className="h-6 w-6 rounded-full bg-orange-200 dark:bg-orange-800" />
+                </div>
+                Trusted by athletes and teams
+              </div>
+            </div>
+          </div>
+          <div className="relative overflow-hidden rounded-3xl border bg-gradient-to-br from-blue-600 via-slate-900 to-emerald-500 p-6 text-white shadow-lg">
+            <div className="space-y-3">
+              <p className="text-xs font-medium uppercase tracking-[0.2em] text-blue-100">Live categories</p>
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div className="rounded-2xl bg-white/5 p-3">
+                  <p className="text-[10px] text-blue-100">Cricket kits</p>
+                  <p className="mt-1 text-sm font-semibold">Bats, pads, gloves</p>
+                </div>
+                <div className="rounded-2xl bg-white/5 p-3">
+                  <p className="text-[10px] text-blue-100">Football</p>
+                  <p className="mt-1 text-sm font-semibold">Boots, balls, kits</p>
+                </div>
+                <div className="rounded-2xl bg-white/5 p-3">
+                  <p className="text-[10px] text-blue-100">Gym</p>
+                  <p className="mt-1 text-sm font-semibold">Weights & accessories</p>
+                </div>
+                <div className="rounded-2xl bg-white/5 p-3">
+                  <p className="text-[10px] text-blue-100">Running</p>
+                  <p className="mt-1 text-sm font-semibold">Shoes & wearables</p>
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex items-center justify-between rounded-2xl bg-foreground/30 p-3 text-xs">
+              <div>
+                <p className="text-[10px] uppercase tracking-[0.2em] text-background/80">Secure payments</p>
+                <p className="text-sm font-semibold text-background">Stripe checkout enabled</p>
+              </div>
+              <Image src="/stripe.svg" alt="Stripe" width={60} height={24} className="opacity-80" />
+            </div>
+          </div>
+        </section>
+
+        {/* Popular Categories Section */}
+        <section className="mt-16 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Popular Categories</h2>
+            <div className="flex items-center gap-2">
+              <button className="cursor-pointer rounded-full border border-border p-2 hover:bg-foreground hover:text-background">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <Link href="/admin/sports" className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-foreground hover:text-background">
+                View All
+              </Link>
+              <button className="cursor-pointer rounded-full border border-border p-2 hover:bg-foreground hover:text-background">
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div className="relative overflow-hidden">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+              {sports.map((sport) => (
+                <div
+                  key={sport._id}
+                  className="flex-shrink-0 w-48 cursor-pointer group"
+                >
+                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl">
+                    <div className="flex flex-col items-center text-center space-y-3">
+                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                        {sport.imageUrl ? (
+                          <Image
+                            src={sport.imageUrl}
+                            alt={sport.name}
+                            width={48}
+                            height={48}
+                            className="rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white text-lg font-bold">
+                            {sport.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="text-lg font-semibold">{sport.name}</h3>
+                      <p className="text-sm text-white/80">
+                        {sport.equipmentTypes.length} equipment type{sport.equipmentTypes.length !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="catalog" className="mt-16 space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">Shop by category</h2>
+            <p className="text-xs text-muted-foreground">
+              Showing <span className="font-medium">{products.length}</span> active products
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 text-xs">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-foreground hover:text-background"
+                type="button"
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {products.length === 0 && (
+              <div className="col-span-full rounded-2xl border border-dashed bg-muted p-8 text-center text-sm text-muted-foreground">
+                No products yet. Sign in to the admin dashboard to add your first sports item.
+              </div>
+            )}
+
+            {products.map((product) => (
+              <article
+                key={product._id}
+                className="flex flex-col overflow-hidden rounded-2xl border bg-background shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              >
+                <div className="relative h-40 w-full bg-muted">
+                  {product.images?.[0] ? (
+                    <Image
+                      src={product.images[0]}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-[10px] text-zinc-500">
+                      No image
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col gap-2 p-4 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="truncate text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                      {product.sport?.name || 'Unknown Sport'}
+                    </p>
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                      (product.stock || 0) > 0
+                        ? 'bg-green-100 text-green-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}>
+                      {(product.stock || 0) > 0 ? "In stock" : "Out of stock"}
+                    </span>
+                  </div>
+                  <h3 className="truncate text-sm font-semibold">
+                    {product.equipment?.name || 'Unknown Equipment'}
+                  </h3>
+                  <p className="line-clamp-2 text-[11px] text-zinc-600">
+                    {product.brand?.name || 'Unknown Brand'}
+                  </p>
+                  <div className="mt-2 flex items-center justify-between">
+                    <div className="text-sm font-semibold">
+                      ${product.price?.toFixed(2) || '0.00'}
+                      <span className="ml-1 text-[10px] text-zinc-500">USD</span>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={(product.stock || 0) <= 0}
+                      className="cursor-pointer inline-flex items-center rounded-full bg-foreground px-3 py-1 text-[11px] font-medium text-background hover:bg-foreground/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+                    >
+                      Add to cart
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       </main>
     </div>
   );
