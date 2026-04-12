@@ -6,7 +6,9 @@ export interface IProduct extends Document {
   brand: mongoose.Types.ObjectId;
   price: number;
   specifications: Record<string, unknown>;
-  images?: string[];
+  featureImageKey?: string;
+  imageKeys?: string[];
+  images?: string[]; // Keep for backward compatibility
   stock?: number;
   isActive?: boolean;
   createdAt?: Date;
@@ -19,7 +21,9 @@ const ProductSchema: Schema = new Schema({
   brand: { type: Schema.Types.ObjectId, ref: 'Brand', required: true },
   price: { type: Number, required: true },
   specifications: { type: Schema.Types.Mixed, default: {} },
-  images: [{ type: String }],
+  featureImageKey: { type: String },
+  imageKeys: [{ type: String }],
+  images: [{ type: String }], // Keep for backward compatibility
   stock: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
 }, {

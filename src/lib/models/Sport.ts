@@ -4,7 +4,7 @@ export interface ISport extends Document {
   _id: string;
   name: string;
   equipmentTypes: string[];
-  imageUrl?: string;
+  imageKey?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -22,7 +22,7 @@ const SportSchema: Schema = new Schema({
     required: [true, 'At least one equipment type is required'],
     trim: true,
   }],
-  imageUrl: {
+  imageKey: {
     type: String,
     trim: true,
   },

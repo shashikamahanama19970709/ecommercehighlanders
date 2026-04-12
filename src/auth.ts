@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import { getCollection } from "@/lib/mongodb";
 import type { AppUser } from "@/types/user";
 
-export const authConfig = {
+export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
   session: {
     strategy: "jwt",
@@ -30,7 +30,7 @@ export const authConfig = {
         const user = await usersCol.findOne({ email: credentials.email } as any);
         if (!user || !user.passwordHash) return null;
 
-        const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
+        const isValid = await bcrypt.compare(credentials.password, user.passwordHash as string);
         if (!isValid) return null;
 
         return {
@@ -59,7 +59,4 @@ export const authConfig = {
     },
   },
   trustHost: true,
-  secret: process.env.AUTH_SECRET,
-};
-
-export default NextAuth(authConfig);
+});

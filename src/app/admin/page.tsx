@@ -1,12 +1,11 @@
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
-import { authConfig } from "@/auth";
+import { auth } from "@/auth";
 import { getCollection } from "@/lib/mongodb";
 import type { Order } from "@/types/order";
 import type { Product } from "@/types/product";
 
 export default async function AdminDashboardPage() {
-  const session = await getServerSession(authConfig);
+  const session = await auth();
 
   if (!session || (session.user as any)?.role !== "admin") {
     redirect("/admin/login");

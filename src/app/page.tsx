@@ -1,6 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
-import type { Product, Category, Sport } from "@/types/product";
+import { PopularCategories } from "@/components/popular-categories";
+import type { Product, Sport } from "@/types/product";
+
+type Category = string;
 
 const CATEGORIES: { id: Category | "all"; label: string }[] = [
   { id: "all", label: "All" },
@@ -12,7 +15,7 @@ const CATEGORIES: { id: Category | "all"; label: string }[] = [
 ];
 
 async function fetchProducts(category?: Category | "all") {
-  const params = category && category !== "all" ? `?category=${encodeURIComponent(category)}` : "";
+  const params = category && category !== "all" ? `?sport=${encodeURIComponent(category)}` : "";
   const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/products${params}`, {
     cache: "no-store",
   });
@@ -125,61 +128,7 @@ export default async function Home() {
         </section>
 
         {/* Popular Categories Section */}
-        <section className="mt-16 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">Popular Categories</h2>
-            <div className="flex items-center gap-2">
-              <button className="cursor-pointer rounded-full border border-border p-2 hover:bg-foreground hover:text-background">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <Link href="/admin/sports" className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-foreground hover:text-background">
-                View All
-              </Link>
-              <button className="cursor-pointer rounded-full border border-border p-2 hover:bg-foreground hover:text-background">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div className="relative overflow-hidden">
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
-              {sports.map((sport) => (
-                <div
-                  key={sport._id}
-                  className="flex-shrink-0 w-48 cursor-pointer group"
-                >
-                  <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-purple-600 p-6 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl">
-                    <div className="flex flex-col items-center text-center space-y-3">
-                      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-                        {sport.imageUrl ? (
-                          <Image
-                            src={sport.imageUrl}
-                            alt={sport.name}
-                            width={48}
-                            height={48}
-                            className="rounded-full object-cover"
-                          />
-                        ) : (
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-white text-lg font-bold">
-                            {sport.name.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                      <h3 className="text-lg font-semibold">{sport.name}</h3>
-                      <p className="text-sm text-white/80">
-                        {sport.equipmentTypes.length} equipment type{sport.equipmentTypes.length !== 1 ? 's' : ''}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <PopularCategories sports={sports} />
 
         <section id="catalog" className="mt-16 space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -217,7 +166,7 @@ export default async function Home() {
                   {product.images?.[0] ? (
                     <Image
                       src={product.images[0]}
-                      alt={product.name}
+                      alt={product.equipment?.name || product._id || 'Product'}
                       fill
                       className="object-cover"
                     />

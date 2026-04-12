@@ -2,7 +2,8 @@ export interface Sport {
   _id?: string;
   name: string;
   equipmentTypes: string[];
-  imageUrl?: string;
+  imageKey?: string;
+  imageUrl?: string; // signed URL for display
 }
 
 export interface Equipment {
@@ -19,7 +20,7 @@ export interface Equipment {
 export interface CategorySchema {
   _id?: string;
   equipmentType: string;
-  fields: FieldDefinition[];
+  fields?: FieldDefinition[];
 }
 
 export interface FieldDefinition {
@@ -33,8 +34,9 @@ export interface FieldDefinition {
 export interface Brand {
   _id: string;
   name: string;
-  logoUrl: string;
-  associatedSports: Sport[];
+  logoKey?: string;
+  logoUrl?: string; // signed URL for display
+  associatedSports: { _id: string; name: string }[]; // populated
   isPublished: boolean;
   createdAt?: string;
   updatedAt?: string;
@@ -42,9 +44,9 @@ export interface Brand {
 
 export interface Product {
   _id?: string;
-  sport: string;
-  equipment: string;
-  brand: string;
+  sport: { name: string }; // populated
+  equipment: { name: string }; // populated
+  brand: { name: string }; // populated
   price: number;
   specifications: Record<string, unknown>; // dynamic fields
   images?: string[];

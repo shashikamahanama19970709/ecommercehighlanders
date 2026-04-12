@@ -9,10 +9,7 @@ import type { Brand, Sport } from '@/types/product';
 
 const brandSchema = z.object({
   name: z.string().min(1, 'Brand name is required'),
-  logoUrl: z.string().refine((url) => {
-    // Allow full URLs or relative URLs starting with /
-    return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/');
-  }, 'Valid logo URL is required'),
+  logoKey: z.string(),
   associatedSports: z.array(z.string()).min(1, 'At least one sport is required'),
   isPublished: z.boolean(),
 });
@@ -25,13 +22,12 @@ export default function AdminBrandsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
-
+  const [uploadingImage, setUploadingImage] = useState(false);  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const { control, handleSubmit, reset, setValue, clearErrors, watch, formState: { errors } } = useForm<BrandFormData>({
     resolver: zodResolver(brandSchema),
     defaultValues: {
       name: '',
-      logoUrl: '',
+      logoKey: '',
       associatedSports: [],
       isPublished: false,
     },
@@ -72,6 +68,7 @@ export default function AdminBrandsPage() {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('folder', 'brands');
 
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -81,9 +78,10 @@ export default function AdminBrandsPage() {
 
       if (response.ok) {
         const data = await response.json();
-        setValue('logoUrl', data.url);
+        setValue('logoKey', data.key);
+        setPreviewUrl(data.signedUrl);
         // Clear any previous errors
-        clearErrors('logoUrl');
+        clearErrors('logoKey');
       } else {
         const error = await response.json();
         alert(`Upload failed: ${error.message || 'Unknown error'}`);
@@ -112,6 +110,7 @@ export default function AdminBrandsPage() {
         await fetchBrands();
         setIsModalOpen(false);
         reset();
+        setPreviewUrl(null);
         setEditingBrand(null);
       } else {
         alert('Error saving brand');
@@ -126,9 +125,10 @@ export default function AdminBrandsPage() {
   const handleEdit = (brand: Brand) => {
     setEditingBrand(brand);
     setValue('name', brand.name);
-    setValue('logoUrl', brand.logoUrl);
+    setValue('logoKey', brand.logoKey || '');
     setValue('associatedSports', brand.associatedSports.map(s => s._id));
     setValue('isPublished', brand.isPublished);
+    setPreviewUrl(brand.logoUrl || null);
     setIsModalOpen(true);
   };
 
@@ -155,7 +155,7 @@ export default function AdminBrandsPage() {
       const response = await fetch(`/api/brands/${brand._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...brand, isPublished: !brand.isPublished }),
+        body: JSON.stringify({ isPublished: !brand.isPublished }),
       });
 
       if (response.ok) {
@@ -178,6 +178,7 @@ export default function AdminBrandsPage() {
             onClick={() => {
               setEditingBrand(null);
               reset();
+              setPreviewUrl(null);
               setIsModalOpen(true);
             }}
             className="cursor-pointer rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -204,24 +205,28 @@ export default function AdminBrandsPage() {
                   <tr key={brand._id} className="hover:bg-gray-50">
                     <td className="py-4">
                       <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                        <Image
-                          src={brand.logoUrl}
-                          alt={brand.name}
-                          width={40}
-                          height={40}
-                          className="object-cover"
-                          onError={(e) => {
-                            // Fallback to avatar placeholder
-                            const target = e.target as HTMLImageElement;
-                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.name)}&background=6366f1&color=ffffff&size=40&font-size=0.6`;
-                          }}
-                        />
+                        {brand.logoUrl ? (
+                          <Image
+                            src={brand.logoUrl}
+                            alt={brand.name}
+                            width={40}
+                            height={40}
+                            className="object-cover"
+                            onError={(e) => {
+                              // Fallback to avatar placeholder
+                              const target = e.target as HTMLImageElement;
+                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.name)}&background=6366f1&color=ffffff&size=40&font-size=0.6`;
+                            }}
+                          />
+                        ) : (
+                          <div className="text-xs text-gray-500">No logo</div>
+                        )}
                       </div>
                     </td>
                     <td className="py-4 font-medium text-gray-900">{brand.name}</td>
                     <td className="py-4">
                       <div className="flex flex-wrap gap-1">
-                        {brand.associatedSports.map((sport: Sport) => (
+                        {brand.associatedSports.map((sport) => (
                           <span
                             key={sport._id}
                             className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
@@ -296,11 +301,11 @@ export default function AdminBrandsPage() {
                   <label className="text-sm font-medium">Logo</label>
                   <div className="space-y-3">
                     {/* Current Logo Preview */}
-                    {watch('logoUrl') && (
+                    {previewUrl && (
                       <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                         <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden border">
                           <Image
-                            src={watch('logoUrl')}
+                            src={previewUrl}
                             alt="Logo preview"
                             width={48}
                             height={48}
@@ -320,7 +325,7 @@ export default function AdminBrandsPage() {
 
                     {/* File Upload */}
                     <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
-                      {watch('logoUrl') && !uploadingImage ? (
+                      {previewUrl && !uploadingImage ? (
                         <>
                           <input
                             type="file"
@@ -339,7 +344,7 @@ export default function AdminBrandsPage() {
                           >
                             <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center overflow-hidden border">
                               <Image
-                                src={watch('logoUrl')}
+                                src={previewUrl}
                                 alt="Uploaded logo"
                                 width={64}
                                 height={64}
@@ -393,16 +398,16 @@ export default function AdminBrandsPage() {
                       )}
                     </div>
 
-                    {/* Hidden URL field for form validation */}
+                    {/* Hidden logoKey field for form validation */}
                     <Controller
-                      name="logoUrl"
+                      name="logoKey"
                       control={control}
                       render={({ field }) => (
                         <input {...field} type="hidden" />
                       )}
                     />
                   </div>
-                  {errors.logoUrl && <p className="text-sm text-red-600">{errors.logoUrl.message}</p>}
+                  {errors.logoKey && <p className="text-sm text-red-600">{errors.logoKey.message}</p>}
                 </div>
 
                 <Controller
@@ -417,7 +422,7 @@ export default function AdminBrandsPage() {
                             <input
                               type="checkbox"
                               value={sport._id}
-                              checked={field.value.includes(sport._id)}
+                              checked={sport._id ? field.value.includes(sport._id) : false}
                               onChange={(e) => {
                                 const value = e.target.value;
                                 if (e.target.checked) {
@@ -459,6 +464,7 @@ export default function AdminBrandsPage() {
                     onClick={() => {
                       setIsModalOpen(false);
                       reset();
+                      setPreviewUrl(null);
                       setEditingBrand(null);
                     }}
                     className="cursor-pointer flex-1 rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"

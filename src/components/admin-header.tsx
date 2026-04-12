@@ -25,7 +25,7 @@ export function AdminHeader() {
                 {session?.user?.name || "Admin User"}
               </p>
               <p className="text-xs text-muted-foreground capitalize">
-                {session?.user?.role || "admin"}
+                {(session?.user as any)?.role || "admin"}
               </p>
             </div>
 

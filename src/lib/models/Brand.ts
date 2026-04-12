@@ -2,7 +2,8 @@ import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IBrand extends Document {
   name: string;
-  logoUrl: string;
+  logoKey?: string;
+  logoUrl?: string; // For backward compatibility
   associatedSports: mongoose.Types.ObjectId[];
   isPublished: boolean;
   createdAt: Date;
@@ -11,8 +12,9 @@ export interface IBrand extends Document {
 
 const BrandSchema: Schema = new Schema({
   name: { type: String, required: true, unique: true },
-  logoUrl: { type: String, required: true },
-  associatedSports: [{ type: Schema.Types.ObjectId, ref: 'Sport', required: true }],
+  logoKey: { type: String },
+  logoUrl: { type: String }, // For backward compatibility
+  associatedSports: [{ type: Schema.Types.ObjectId, ref: 'Sport' }],
   isPublished: { type: Boolean, default: false },
 }, {
   timestamps: true,

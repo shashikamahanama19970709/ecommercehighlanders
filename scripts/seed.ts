@@ -165,7 +165,7 @@ async function seedDatabase() {
 
     const brandsToInsert = brandData.map(brand => ({
       name: brand.name,
-      logoUrl: brand.logoUrl,
+      logoUrl: brand.logoUrl, // Keep logoUrl for backward compatibility
       associatedSports: brand.sports.map(sportName => sportMap.get(sportName)).filter(Boolean),
       isPublished: true, // Publish some brands by default
     }));

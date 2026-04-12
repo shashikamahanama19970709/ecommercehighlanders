@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
@@ -24,15 +25,20 @@ const s3Client =
       })
     : null;
 
-const useLocalStorage = !s3Client; // Fallback to local storage if B2 is not configured
+// Use Backblaze B2 only, no local fallback
+const useB2 = !!s3Client;
 
 export const runtime = "nodejs";
 
-// POST /api/upload - upload a single image file to Backblaze B2 or local storage
+// POST /api/upload - upload a single image file to Backblaze B2 private bucket
 export async function POST(request: NextRequest) {
-  console.log("Upload request received - v2");
+  console.log("Upload request received");
   console.log("Content-Type:", request.headers.get("content-type"));
   console.log("Content-Length:", request.headers.get("content-length"));
+
+  if (!useB2) {
+    return NextResponse.json({ message: "Backblaze B2 not configured" }, { status: 500 });
+  }
 
   try {
     const formData = await request.formData();
@@ -55,40 +61,35 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
     const ext = file.name.split(".").pop() || "jpg";
     const filename = `${crypto.randomUUID()}.${ext}`;
+    
+    // Get folder from form data, default to 'products' for backward compatibility
+    const folder = formData.get("folder") as string || "products";
+    const key = `${folder}/${filename}`;
 
-    if (useLocalStorage) {
-      // Local storage fallback for development
-      console.log("Using local storage for file upload (B2 not configured)");
+    console.log("Attempting to upload to Backblaze B2:", { bucket: b2Bucket, key });
 
-      const uploadsDir = join(process.cwd(), 'public', 'uploads');
-      await mkdir(uploadsDir, { recursive: true });
+    await s3Client!.send(
+      new PutObjectCommand({
+        Bucket: b2Bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type,
+        // No ACL for private bucket
+      }),
+    );
 
-      const filePath = join(uploadsDir, filename);
-      await writeFile(filePath, buffer);
+    // Generate signed URL for preview (expires in 1 hour)
+    const signedUrl = await getSignedUrl(
+      s3Client!,
+      new GetObjectCommand({
+        Bucket: b2Bucket,
+        Key: key,
+      }),
+      { expiresIn: 3600 } // 1 hour
+    );
 
-      const publicUrl = `/uploads/${filename}`;
-      console.log("Local upload successful:", publicUrl);
-      return NextResponse.json({ url: publicUrl });
-    } else {
-      // Backblaze B2 upload
-      console.log("Attempting to upload to Backblaze B2:", { bucket: b2Bucket, key: `products/${filename}` });
-
-      const key = `products/${filename}`;
-
-      await s3Client!.send(
-        new PutObjectCommand({
-          Bucket: b2Bucket,
-          Key: key,
-          Body: buffer,
-          ContentType: file.type,
-          ACL: "public-read",
-        }) as any,
-      );
-
-      const publicUrl = `${b2Endpoint!.replace(/\/$/, "")}/${b2Bucket}/${key}`;
-      console.log("B2 upload successful:", publicUrl);
-      return NextResponse.json({ url: publicUrl });
-    }
+    console.log("B2 upload successful, signed URL generated");
+    return NextResponse.json({ key, signedUrl });
   } catch (error) {
     console.error("Error uploading file:", error);
     return NextResponse.json({
