@@ -1,7 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ISport extends Document {
-  _id: string;
   name: string;
   equipmentTypes: string[];
   imageKey?: string;

@@ -24,13 +24,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials.password) return null;
+        const email = typeof credentials?.email === "string" ? credentials.email : null;
+        const password = typeof credentials?.password === "string" ? credentials.password : null;
+        if (!email || !password) return null;
 
         const usersCol = await getCollection<AppUser>("users");
-        const user = await usersCol.findOne({ email: credentials.email } as any);
+        const user = await usersCol.findOne({ email } as any);
         if (!user || !user.passwordHash) return null;
 
-        const isValid = await bcrypt.compare(credentials.password, user.passwordHash as string);
+        const isValid = await bcrypt.compare(password, user.passwordHash as string);
         if (!isValid) return null;
 
         return {

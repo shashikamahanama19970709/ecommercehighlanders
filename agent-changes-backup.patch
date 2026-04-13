@@ -1,0 +1,420 @@
+﻿diff --git a/src/app/admin/equipment/page.tsx b/src/app/admin/equipment/page.tsx
+index 093de6d..1ebccaf 100644
+--- a/src/app/admin/equipment/page.tsx
++++ b/src/app/admin/equipment/page.tsx
+@@ -85,7 +85,7 @@ export default function AdminEquipmentPage() {
+   const handleEdit = (item: Equipment) => {
+     setEditingEquipment(item);
+     setValue('name', item.name);
+-    setValue('sport', item.sport._id);
++    setValue('sport', item.sport?._id ?? '');
+     setValue('stock', item.stock);
+     setValue('price', item.price);
+     setValue('status', item.status);
+diff --git a/src/app/admin/login/page.tsx b/src/app/admin/login/page.tsx
+index 164d1f3..370a4ef 100644
+--- a/src/app/admin/login/page.tsx
++++ b/src/app/admin/login/page.tsx
+@@ -1,11 +1,11 @@
+ "use client";
+ 
+-import { FormEvent, useState } from "react";
++import { FormEvent, Suspense, useState } from "react";
+ import { signIn } from "next-auth/react";
+ import { useRouter, useSearchParams } from "next/navigation";
+ import Link from "next/link";
+ 
+-export default function AdminLoginPage() {
++function AdminLoginForm() {
+   const router = useRouter();
+   const searchParams = useSearchParams();
+   const error = searchParams.get("error");
+@@ -119,3 +119,13 @@ export default function AdminLoginPage() {
+     </div>
+   );
+ }
++
++export default function AdminLoginPage() {
++  return (
++    <Suspense
++      fallback={<div className="flex min-h-screen items-center justify-center bg-background px-4" />}
++    >
++      <AdminLoginForm />
++    </Suspense>
++  );
++}
+diff --git a/src/app/admin/page.tsx b/src/app/admin/page.tsx
+index e9aef52..d0aff3f 100644
+--- a/src/app/admin/page.tsx
++++ b/src/app/admin/page.tsx
+@@ -104,9 +104,15 @@ export default async function AdminDashboardPage() {
+                 )}
+                 {products.map((product) => (
+                   <tr key={product._id as any} className="border-t text-foreground">
+-                    <td className="px-4 py-2">{product.name}</td>
+-                    <td className="px-4 py-2">{product.category}</td>
+-                    <td className="px-4 py-2">{product.stock}</td>
++                    <td className="px-4 py-2">
++                      {product.name ??
++                        (typeof product.equipment === "string" ? undefined : product.equipment?.name) ??
++                        "ΓÇö"}
++                    </td>
++                    <td className="px-4 py-2">
++                      {(typeof product.sport === "string" ? undefined : product.sport?.name) ?? "ΓÇö"}
++                    </td>
++                    <td className="px-4 py-2">{product.stock ?? 0}</td>
+                   </tr>
+                 ))}
+               </tbody>
+diff --git a/src/app/api/products/route.ts b/src/app/api/products/route.ts
+index a44dd7f..a273cfe 100644
+--- a/src/app/api/products/route.ts
++++ b/src/app/api/products/route.ts
+@@ -1,7 +1,11 @@
+ import { NextRequest, NextResponse } from 'next/server';
+ import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
++import { isValidObjectId } from 'mongoose';
+ import Product from '@/lib/models/Product';
++import Sport from '@/lib/models/Sport';
++import Equipment from '@/lib/models/Equipment';
++import Brand from '@/lib/models/Brand';
+ import { connectToDatabase } from '@/lib/mongodb';
+ 
+ const b2Endpoint = process.env.B2_ENDPOINT;
+@@ -24,18 +28,81 @@ const s3Client =
+       })
+     : null;
+ 
++async function resolveIdOrName(
++  value: unknown,
++  opts: {
++    kind: 'sport' | 'brand';
++  }
++): Promise<string | null> {
++  if (typeof value !== 'string' || value.trim() === '') return null;
++  if (isValidObjectId(value)) return value;
++
++  const name = value.trim();
++  if (opts.kind === 'sport') {
++    const sport = await Sport.findOne({ name }).select('_id').lean();
++    return sport?._id?.toString?.() ?? null;
++  }
++
++  const brand = await Brand.findOne({ name }).select('_id').lean();
++  return brand?._id?.toString?.() ?? null;
++}
++
++async function resolveEquipmentId(value: unknown, sportId: string | null): Promise<string | null> {
++  if (typeof value !== 'string' || value.trim() === '') return null;
++  if (isValidObjectId(value)) return value;
++  if (!sportId) return null;
++
++  const name = value.trim();
++
++  const existing = await Equipment.findOne({ name, sport: sportId }).select('_id').lean();
++  if (existing?._id) return existing._id.toString();
++
++  try {
++    const created = await Equipment.create({
++      name,
++      sport: sportId,
++      category: name,
++      status: 'active',
++      totalStock: 0,
++      availableStock: 0,
++      specifications: {},
++    });
++    return created._id.toString();
++  } catch {
++    // In case of a race / duplicate key error, fetch once more.
++    const again = await Equipment.findOne({ name, sport: sportId }).select('_id').lean();
++    return again?._id?.toString?.() ?? null;
++  }
++}
++
+ // GET /api/products - list products (optionally filter by sport or equipment)
+ export async function GET(request: NextRequest) {
+   try {
+     const { searchParams } = new URL(request.url);
+     const sport = searchParams.get('sport');
+     const equipment = searchParams.get('equipment');
++    const includeInactive = searchParams.get('includeInactive') === '1' || searchParams.get('includeInactive') === 'true';
+ 
+     await connectToDatabase();
+ 
+-    const query: Record<string, unknown> = { isActive: true };
+-    if (sport) query.sport = sport;
+-    if (equipment) query.equipment = equipment;
++    const query: Record<string, unknown> = {};
++    if (!includeInactive) query.isActive = true;
++
++    if (sport) {
++      const sportId = await resolveIdOrName(sport, { kind: 'sport' });
++      if (sportId) query.sport = sportId;
++    }
++
++    if (equipment) {
++      // Prefer filtering by id; if a name is passed, only resolve when sport is present.
++      if (isValidObjectId(equipment)) {
++        query.equipment = equipment;
++      } else if (sport) {
++        const sportId = await resolveIdOrName(sport, { kind: 'sport' });
++        const equipmentId = await resolveEquipmentId(equipment, sportId);
++        if (equipmentId) query.equipment = equipmentId;
++      }
++    }
+ 
+     const products = await Product.find(query)
+       .populate('sport', 'name')
+@@ -64,7 +131,7 @@ export async function GET(request: NextRequest) {
+ 
+           if (product.imageKeys && product.imageKeys.length > 0) {
+             imageUrls = await Promise.all(
+-              product.imageKeys.map(key =>
++              product.imageKeys.map((key: string) =>
+                 getSignedUrl(
+                   s3Client,
+                   new GetObjectCommand({
+@@ -100,11 +167,43 @@ export async function POST(request: NextRequest) {
+     const body = await request.json();
+     await connectToDatabase();
+ 
++    const sportId = await resolveIdOrName(body.sport, { kind: 'sport' });
++    if (!sportId) {
++      return NextResponse.json(
++        { message: 'Invalid sport. Provide a sport id or existing sport name.' },
++        { status: 400 }
++      );
++    }
++
++    const brandId = await resolveIdOrName(body.brand, { kind: 'brand' });
++    if (!brandId) {
++      return NextResponse.json(
++        { message: 'Invalid brand. Provide a brand id or existing brand name.' },
++        { status: 400 }
++      );
++    }
++
++    const equipmentId = await resolveEquipmentId(body.equipment, sportId);
++    if (!equipmentId) {
++      return NextResponse.json(
++        {
++          message:
++            'Invalid equipment. Provide an equipment id or an existing equipment name that belongs to the selected sport.',
++        },
++        { status: 400 }
++      );
++    }
++
+     const product = new Product({
+-      sport: body.sport,
+-      equipment: body.equipment,
+-      brand: body.brand,
++      name: typeof body.name === 'string' ? body.name.trim() : undefined,
++      description: typeof body.description === 'string' ? body.description.trim() : undefined,
++      sku: typeof body.sku === 'string' ? body.sku.trim() : undefined,
++      sport: sportId,
++      equipment: equipmentId,
++      brand: brandId,
++      models: body.models || [],
+       price: Number(body.price),
++      discount: body.discount,
+       specifications: body.specifications || {},
+       featureImageKey: body.featureImageKey,
+       imageKeys: body.imageKeys || [],
+@@ -132,7 +231,7 @@ export async function POST(request: NextRequest) {
+ 
+       if (savedProduct.imageKeys && savedProduct.imageKeys.length > 0) {
+         imageUrls = await Promise.all(
+-          savedProduct.imageKeys.map(key =>
++          savedProduct.imageKeys.map((key: string) =>
+             getSignedUrl(
+               s3Client,
+               new GetObjectCommand({
+diff --git a/src/app/page.tsx b/src/app/page.tsx
+index 4c61745..d962727 100644
+--- a/src/app/page.tsx
++++ b/src/app/page.tsx
+@@ -166,7 +166,11 @@ export default async function Home() {
+                   {product.images?.[0] ? (
+                     <Image
+                       src={product.images[0]}
+-                      alt={product.equipment?.name || product._id || 'Product'}
++                      alt={
++                        (typeof product.equipment === "string" ? undefined : product.equipment?.name) ??
++                        product._id ??
++                        "Product"
++                      }
+                       fill
+                       className="object-cover"
+                     />
+@@ -179,7 +183,7 @@ export default async function Home() {
+                 <div className="flex flex-1 flex-col gap-2 p-4 text-xs">
+                   <div className="flex items-center justify-between gap-2">
+                     <p className="truncate text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+-                      {product.sport?.name || 'Unknown Sport'}
++                      {(typeof product.sport === "string" ? undefined : product.sport?.name) ?? "Unknown Sport"}
+                     </p>
+                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                       (product.stock || 0) > 0
+@@ -190,10 +194,11 @@ export default async function Home() {
+                     </span>
+                   </div>
+                   <h3 className="truncate text-sm font-semibold">
+-                    {product.equipment?.name || 'Unknown Equipment'}
++                    {(typeof product.equipment === "string" ? undefined : product.equipment?.name) ??
++                      "Unknown Equipment"}
+                   </h3>
+                   <p className="line-clamp-2 text-[11px] text-zinc-600">
+-                    {product.brand?.name || 'Unknown Brand'}
++                    {(typeof product.brand === "string" ? undefined : product.brand?.name) ?? "Unknown Brand"}
+                   </p>
+                   <div className="mt-2 flex items-center justify-between">
+                     <div className="text-sm font-semibold">
+diff --git a/src/auth.ts b/src/auth.ts
+index ff7ae84..fdfd692 100644
+--- a/src/auth.ts
++++ b/src/auth.ts
+@@ -24,13 +24,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
+         password: { label: "Password", type: "password" },
+       },
+       async authorize(credentials) {
+-        if (!credentials?.email || !credentials.password) return null;
++        const email = typeof credentials?.email === "string" ? credentials.email : null;
++        const password = typeof credentials?.password === "string" ? credentials.password : null;
++        if (!email || !password) return null;
+ 
+         const usersCol = await getCollection<AppUser>("users");
+-        const user = await usersCol.findOne({ email: credentials.email } as any);
++        const user = await usersCol.findOne({ email } as any);
+         if (!user || !user.passwordHash) return null;
+ 
+-        const isValid = await bcrypt.compare(credentials.password, user.passwordHash as string);
++        const isValid = await bcrypt.compare(password, user.passwordHash as string);
+         if (!isValid) return null;
+ 
+         return {
+diff --git a/src/components/theme-provider.tsx b/src/components/theme-provider.tsx
+index bdcd16f..b3b3f08 100644
+--- a/src/components/theme-provider.tsx
++++ b/src/components/theme-provider.tsx
+@@ -2,11 +2,11 @@
+ 
+ import * as React from "react"
+ import { ThemeProvider as NextThemesProvider } from "next-themes"
+-import { type ThemeProviderProps } from "next-themes/dist/types"
++import { type ThemeProviderProps } from "next-themes"
+ 
+ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+   return (
+-    <NextThemesProvider {...props} suppressHydrationWarning>
++    <NextThemesProvider {...props}>
+       {children}
+     </NextThemesProvider>
+   )
+diff --git a/src/lib/models/Sport.ts b/src/lib/models/Sport.ts
+index a6399e1..7acf111 100644
+--- a/src/lib/models/Sport.ts
++++ b/src/lib/models/Sport.ts
+@@ -1,7 +1,6 @@
+ import mongoose, { Schema, Document } from 'mongoose';
+ 
+ export interface ISport extends Document {
+-  _id: string;
+   name: string;
+   equipmentTypes: string[];
+   imageKey?: string;
+diff --git a/src/lib/mongodb.ts b/src/lib/mongodb.ts
+index 9b775b1..42a19b7 100644
+--- a/src/lib/mongodb.ts
++++ b/src/lib/mongodb.ts
+@@ -1,4 +1,4 @@
+-import { MongoClient, Db } from "mongodb";
++import { MongoClient, Db, type Document } from "mongodb";
+ import mongoose from 'mongoose';
+ 
+ const uri = process.env.MONGODB_URI;
+@@ -8,12 +8,14 @@ if (!uri) {
+   throw new Error("MONGODB_URI is not set in environment variables");
+ }
+ 
++const mongoUri = uri;
++
+ let client: MongoClient | null = null;
+ let clientPromiseInternal: Promise<MongoClient> | null = null;
+ 
+ export function getMongoClientPromise(): Promise<MongoClient> {
+   if (!clientPromiseInternal) {
+-    client = new MongoClient(uri);
++    client = new MongoClient(mongoUri);
+     clientPromiseInternal = client.connect();
+   }
+   return clientPromiseInternal;
+@@ -28,7 +30,7 @@ export async function getDb(): Promise<Db> {
+   return client.db(dbName);
+ }
+ 
+-export async function getCollection<TSchema = any>(name: string) {
++export async function getCollection<TSchema extends Document = Document>(name: string) {
+   const db = await getDb();
+   return db.collection<TSchema>(name);
+ }
+@@ -38,7 +40,7 @@ export async function connectToDatabase() {
+   if (mongoose.connections[0].readyState) {
+     return;
+   }
+-  await mongoose.connect(uri, {
++  await mongoose.connect(mongoUri, {
+     dbName,
+   });
+ }
+diff --git a/src/types/order.ts b/src/types/order.ts
+index 2346797..e1d566d 100644
+--- a/src/types/order.ts
++++ b/src/types/order.ts
+@@ -1,11 +1,9 @@
+-import type { Product } from "./product";
+-
+ export type OrderStatus = "pending" | "paid" | "failed" | "cancelled";
+ 
+ export interface OrderItemSnapshot {
+   productId: string;
+   name: string;
+-  category: Product["category"];
++  category?: string;
+   priceUsd: number;
+   quantity: number;
+ }
+diff --git a/src/types/product.ts b/src/types/product.ts
+index db3298f..ca091b2 100644
+--- a/src/types/product.ts
++++ b/src/types/product.ts
+@@ -44,11 +44,24 @@ export interface Brand {
+ 
+ export interface Product {
+   _id?: string;
+-  sport: { name: string }; // populated
+-  equipment: { name: string }; // populated
+-  brand: { name: string }; // populated
++  name?: string;
++  description?: string;
++  sku?: string;
++  sport: { _id?: string; name?: string } | string; // populated or raw id
++  equipment: { _id?: string; name?: string } | string; // populated or raw id
++  brand: { _id?: string; name?: string } | string; // populated or raw id
++  models?: string[];
+   price: number;
++  discount?: {
++    isActive: boolean;
++    type: 'percentage' | 'fixed';
++    value: number;
++  };
+   specifications: Record<string, unknown>; // dynamic fields
++  featureImageKey?: string;
++  featureImageUrl?: string;
++  imageKeys?: string[];
++  imageUrls?: string[];
+   images?: string[];
+   stock?: number;
+   isActive?: boolean;

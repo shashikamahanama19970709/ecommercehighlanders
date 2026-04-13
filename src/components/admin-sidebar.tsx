@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Store, Tag, Trophy, Wrench } from "lucide-react";
+import { LayoutDashboard, LayoutGrid, Package, Store, Tag, Trophy, Wrench } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Sports", href: "/admin/sports", icon: Trophy },
+  { name: "Shop by Sport", href: "/admin/shop-by-sport", icon: LayoutGrid },
   { name: "Equipment", href: "/admin/equipment", icon: Wrench },
   { name: "Brands", href: "/admin/brands", icon: Tag },
   { name: "Products", href: "/admin/products", icon: Package },

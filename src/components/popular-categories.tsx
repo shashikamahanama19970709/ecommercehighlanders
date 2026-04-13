@@ -128,7 +128,7 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
 
   if (!sports.length) {
     return (
-      <section className="mt-16 space-y-6">
+      <section className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-semibold tracking-tight text-foreground">Popular Categories</h2>
           <p className="text-muted-foreground">No sports categories available yet.</p>
@@ -138,25 +138,28 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
   }
 
   return (
-    <section className="mt-16 space-y-6">
+    <section className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold tracking-tight text-foreground">Popular Categories</h2>
         <div className="flex items-center gap-2">
           <button
             onClick={scrollLeftHandler}
-            className="cursor-pointer rounded-full border border-border p-2 hover:bg-foreground hover:text-background transition-colors"
+            className="cursor-pointer rounded-full border border-border p-2 text-foreground hover:bg-muted transition-colors"
             aria-label="Scroll left"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <Link href="/admin/sports" className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-foreground hover:text-background transition-colors">
+          <Link
+            href="/admin/sports"
+            className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
+          >
             View All
           </Link>
           <button
             onClick={scrollRightHandler}
-            className="cursor-pointer rounded-full border border-border p-2 hover:bg-foreground hover:text-background transition-colors"
+            className="cursor-pointer rounded-full border border-border p-2 text-foreground hover:bg-muted transition-colors"
             aria-label="Scroll right"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -189,9 +192,9 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
               key={`${sport._id}-${index}`}
               className="flex-shrink-0 w-48 cursor-pointer group select-none"
             >
-              <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg transition hover:-translate-y-1 hover:shadow-xl">
+              <div className="relative overflow-hidden rounded-xl p-6 transition hover:-translate-y-1">
                 <div className="flex flex-col items-center text-center space-y-3">
-                  <div className="flex h-32 w-32 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+                  <div className="flex h-32 w-32 items-center justify-center rounded-full border border-border">
                     {sport.imageUrl ? (
                       <Image
                         src={sport.imageUrl}
@@ -201,15 +204,13 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
                         className="rounded-full object-cover"
                       />
                     ) : (
-                      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white/10 text-white text-lg font-bold">
+                      <div className="flex h-24 w-24 items-center justify-center rounded-full border border-border text-foreground text-lg font-bold">
                         {sport.name.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
-                  <h3 className="text-lg font-semibold">{sport.name}</h3>
-                  <p className="text-sm text-white/80">
-                    {sport.equipmentTypes.length} equipment type{sport.equipmentTypes.length !== 1 ? 's' : ''}
-                  </p>
+                  <h3 className="text-lg font-semibold text-foreground">{sport.name}</h3>
+                  
                 </div>
               </div>
             </div>

@@ -104,9 +104,15 @@ export default async function AdminDashboardPage() {
                 )}
                 {products.map((product) => (
                   <tr key={product._id as any} className="border-t text-foreground">
-                    <td className="px-4 py-2">{product.name}</td>
-                    <td className="px-4 py-2">{product.category}</td>
-                    <td className="px-4 py-2">{product.stock}</td>
+                    <td className="px-4 py-2">
+                      {product.name ??
+                        (typeof product.equipment === "string" ? undefined : product.equipment?.name) ??
+                        "—"}
+                    </td>
+                    <td className="px-4 py-2">
+                      {(typeof product.sport === "string" ? undefined : product.sport?.name) ?? "—"}
+                    </td>
+                    <td className="px-4 py-2">{product.stock ?? 0}</td>
                   </tr>
                 ))}
               </tbody>

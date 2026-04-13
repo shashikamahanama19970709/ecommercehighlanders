@@ -85,7 +85,7 @@ export default function AdminEquipmentPage() {
   const handleEdit = (item: Equipment) => {
     setEditingEquipment(item);
     setValue('name', item.name);
-    setValue('sport', item.sport._id);
+    setValue('sport', item.sport?._id ?? '');
     setValue('stock', item.stock);
     setValue('price', item.price);
     setValue('status', item.status);

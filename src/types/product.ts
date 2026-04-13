@@ -44,11 +44,26 @@ export interface Brand {
 
 export interface Product {
   _id?: string;
-  sport: { name: string }; // populated
-  equipment: { name: string }; // populated
-  brand: { name: string }; // populated
+  name?: string;
+  description?: string;
+  sku?: string;
+  sport: { _id?: string; name?: string } | string; // populated or raw id
+  equipment: { _id?: string; name?: string } | string; // populated or raw id
+  brand: { _id?: string; name?: string } | string; // populated or raw id
+  models?: string[];
+  // Legacy single-model field that may exist on older documents.
+  model?: string;
   price: number;
+  discount?: {
+    isActive: boolean;
+    type: 'percentage' | 'fixed';
+    value: number;
+  };
   specifications: Record<string, unknown>; // dynamic fields
+  featureImageKey?: string;
+  featureImageUrl?: string;
+  imageKeys?: string[];
+  imageUrls?: string[];
   images?: string[];
   stock?: number;
   isActive?: boolean;

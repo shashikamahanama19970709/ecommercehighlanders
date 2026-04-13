@@ -1,11 +1,9 @@
-import type { Product } from "./product";
-
 export type OrderStatus = "pending" | "paid" | "failed" | "cancelled";
 
 export interface OrderItemSnapshot {
   productId: string;
   name: string;
-  category: Product["category"];
+  category?: string;
   priceUsd: number;
   quantity: number;
 }
