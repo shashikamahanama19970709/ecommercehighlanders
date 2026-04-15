@@ -4,11 +4,13 @@ import { ShoppingCart } from "lucide-react";
 import { PopularCategories } from "@/components/popular-categories";
 import { ShopBySportLandingSection } from "@/components/shop-by-sport-landing";
 import { BrandsLandingSection } from "@/components/brands-landing";
+import { AboutUsLandingSection } from "@/components/about-us-landing";
 import { LandingVideoHero } from "@/components/landing-video-hero";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { HeaderNav } from "@/components/header-nav";
 import type { Brand, Product, Sport } from "@/types/product";
 import type { ShopBySportModule } from "@/types/shop-by-sport";
+import type { AboutUsModule } from "@/types/about-us";
 
 type Category = string;
 
@@ -60,11 +62,21 @@ async function fetchShopBySportModule() {
   return (await res.json()) as ShopBySportModule;
 }
 
+async function fetchAboutUsModule() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/landing/about-us`, {
+    cache: "no-store",
+  });
+
+  if (!res.ok) return null as AboutUsModule | null;
+  return (await res.json()) as AboutUsModule;
+}
+
 export default async function Home() {
   const products = await fetchProducts("all");
   const sports = await fetchSports();
   const brands = await fetchBrands();
   const shopBySportModule = await fetchShopBySportModule();
+  const aboutUsModule = await fetchAboutUsModule();
 
   return (
     <div className="flex-1">
@@ -114,6 +126,12 @@ export default async function Home() {
         <section className="bg-gradient-to-b from-muted/50 via-background to-background py-16">
           <div className="mx-auto w-full max-w-6xl px-6">
             <BrandsLandingSection brands={brands} shopBySportModule={shopBySportModule} />
+          </div>
+        </section>
+
+        <section className="bg-background py-16">
+          <div className="mx-auto w-full max-w-6xl px-6">
+            <AboutUsLandingSection moduleDoc={aboutUsModule} />
           </div>
         </section>
 

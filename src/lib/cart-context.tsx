@@ -1,8 +1,10 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useReducer, ReactNode } from 'react';
 import type { Product } from '@/types/product';
 import type { CartItem } from '@/types/cart';
+
+const CART_STORAGE_KEY = 'sportify_cart_v1';
 
 interface CartState {
   items: CartItem[];
@@ -17,12 +19,18 @@ type CartAction =
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'ADD_TO_CART': {
-      const existingItem = state.items.find(item => item.product._id === action.product._id);
+      const productId = typeof action.product._id === 'string' ? action.product._id : action.product._id ? String(action.product._id) : '';
+      if (!productId) return state;
+
+      const existingItem = state.items.find(item => {
+        const itemId = typeof item.product._id === 'string' ? item.product._id : item.product._id ? String(item.product._id) : '';
+        return itemId === productId;
+      });
       if (existingItem) {
         return {
           ...state,
           items: state.items.map(item =>
-            item.product._id === action.product._id
+            (typeof item.product._id === 'string' ? item.product._id : item.product._id ? String(item.product._id) : '') === productId
               ? { ...item, quantity: item.quantity + 1 }
               : item
           ),
@@ -30,25 +38,31 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       }
       return {
         ...state,
-        items: [...state.items, { product: action.product, quantity: 1 }],
+        items: [...state.items, { product: { ...action.product, _id: productId }, quantity: 1 }],
       };
     }
     case 'REMOVE_FROM_CART':
       return {
         ...state,
-        items: state.items.filter(item => item.product._id !== action.id),
+        items: state.items.filter(item => {
+          const itemId = typeof item.product._id === 'string' ? item.product._id : item.product._id ? String(item.product._id) : '';
+          return itemId !== action.id;
+        }),
       };
     case 'UPDATE_QUANTITY':
       if (action.quantity <= 0) {
         return {
           ...state,
-          items: state.items.filter(item => item.product._id !== action.id),
+          items: state.items.filter(item => {
+            const itemId = typeof item.product._id === 'string' ? item.product._id : item.product._id ? String(item.product._id) : '';
+            return itemId !== action.id;
+          }),
         };
       }
       return {
         ...state,
         items: state.items.map(item =>
-          item.product._id === action.id
+          (typeof item.product._id === 'string' ? item.product._id : item.product._id ? String(item.product._id) : '') === action.id
             ? { ...item, quantity: action.quantity }
             : item
         ),
@@ -72,7 +86,51 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, { items: [] });
+  const [state, dispatch] = useReducer(
+    cartReducer,
+    { items: [] },
+    (initialState) => {
+      if (typeof window === 'undefined') return initialState;
+
+      try {
+        const raw = window.localStorage.getItem(CART_STORAGE_KEY);
+        if (!raw) return initialState;
+        const parsed = JSON.parse(raw) as unknown;
+        if (!Array.isArray(parsed)) return initialState;
+
+        const items = parsed
+          .map((item) => {
+            if (!item || typeof item !== 'object') return null;
+            const maybe = item as { product?: unknown; quantity?: unknown };
+
+            if (!maybe.product || typeof maybe.product !== 'object') return null;
+            const product = maybe.product as Product;
+
+            const quantity =
+              typeof maybe.quantity === 'number' && Number.isFinite(maybe.quantity)
+                ? Math.max(1, Math.floor(maybe.quantity))
+                : 1;
+
+            if (!product?._id) return null;
+
+            return { product, quantity } satisfies CartItem;
+          })
+          .filter(Boolean) as CartItem[];
+
+        return { items };
+      } catch {
+        return initialState;
+      }
+    }
+  );
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(state.items));
+    } catch {
+      // Ignore storage quota / privacy mode errors
+    }
+  }, [state.items]);
 
   const addToCart = (product: Product) => {
     dispatch({ type: 'ADD_TO_CART', product });

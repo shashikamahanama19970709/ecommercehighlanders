@@ -41,7 +41,7 @@ export default function CheckoutPage() {
             <h2 className="text-lg font-medium text-foreground">Order Summary</h2>
             <div className="mt-4 space-y-4">
               {items.map((item) => (
-                <div key={item.product._id} className="flex items-center gap-4">
+                <div key={String(item.product._id)} className="flex items-center gap-4">
                   <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                     {item.product.featureImageUrl ? (
                       <Image

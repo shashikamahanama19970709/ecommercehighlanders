@@ -34,7 +34,7 @@ export default function CartPage() {
 
         <div className="mt-8 space-y-4">
           {items.map((item) => (
-            <div key={item.product._id} className="flex items-center gap-4 rounded-lg border p-4">
+            <div key={String(item.product._id)} className="flex items-center gap-4 rounded-lg border p-4">
               <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                 {item.product.featureImageUrl ? (
                   <Image

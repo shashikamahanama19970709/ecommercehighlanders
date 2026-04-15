@@ -153,7 +153,7 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
           </button>
           <Link
             href="/admin/sports"
-            className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs text-foreground hover:bg-muted transition-colors"
+            className="cursor-pointer rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background hover:bg-foreground/90 transition-colors"
           >
             View All
           </Link>
@@ -192,19 +192,19 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
               key={`${sport._id}-${index}`}
               className="flex-shrink-0 w-48 cursor-pointer group select-none"
             >
-              <div className="relative overflow-hidden rounded-xl p-6 transition hover:-translate-y-1">
+              <div className="relative overflow-hidden rounded-none p-6 transition hover:-translate-y-1">
                 <div className="flex flex-col items-center text-center space-y-3">
-                  <div className="flex h-32 w-32 items-center justify-center rounded-full border border-border">
+                  <div className="flex h-36 w-36 items-center justify-center">
                     {sport.imageUrl ? (
                       <Image
                         src={sport.imageUrl}
                         alt={sport.name}
-                        width={96}
-                        height={96}
-                        className="rounded-full object-cover"
+                        width={112}
+                        height={112}
+                        className="object-cover"
                       />
                     ) : (
-                      <div className="flex h-24 w-24 items-center justify-center rounded-full border border-border text-foreground text-lg font-bold">
+                      <div className="flex h-28 w-28 items-center justify-center text-foreground text-lg font-bold">
                         {sport.name.charAt(0).toUpperCase()}
                       </div>
                     )}

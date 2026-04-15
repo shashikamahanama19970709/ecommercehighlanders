@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, LayoutGrid, Package, Store, Tag, Trophy, Wrench } from "lucide-react";
+import { LayoutDashboard, Package, Store, Tag, Trophy, Wrench } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
+  { name: "Landing", href: "/admin/landing", icon: LayoutDashboard },
   { name: "Sports", href: "/admin/sports", icon: Trophy },
-  { name: "Shop by Sport", href: "/admin/shop-by-sport", icon: LayoutGrid },
   { name: "Equipment", href: "/admin/equipment", icon: Wrench },
   { name: "Brands", href: "/admin/brands", icon: Tag },
   { name: "Products", href: "/admin/products", icon: Package },
@@ -17,7 +17,7 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full w-64 flex-col bg-background shadow-lg">
+    <div className="flex h-full w-64 shrink-0 flex-col bg-background shadow-lg">
       <div className="flex h-16 shrink-0 items-center justify-center border-b px-4">
         <div className="flex items-center space-x-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
