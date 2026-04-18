@@ -48,18 +48,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "No file provided" }, { status: 400 });
     }
 
-    // Validate file size (10MB limit)
-    if (file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ message: "File size must be less than 10MB" }, { status: 400 });
-    }
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ message: "Only image files are allowed" }, { status: 400 });
+    if (!isImage && !isVideo) {
+      return NextResponse.json({ message: "Only image or video files are allowed" }, { status: 400 });
+    }
+
+    // Validate file size
+    const maxSizeBytes = isVideo ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      return NextResponse.json(
+        { message: isVideo ? "Video size must be less than 50MB" : "File size must be less than 10MB" },
+        { status: 400 }
+      );
+    }
+
+    // Basic allow-list for common video types
+    if (isVideo) {
+      const allowed = new Set(["video/mp4", "video/webm", "video/ogg", "video/quicktime"]);
+      if (!allowed.has(file.type)) {
+        return NextResponse.json({ message: "Unsupported video type" }, { status: 400 });
+      }
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const ext = file.name.split(".").pop() || "jpg";
+    const ext = file.name.split(".").pop() || (isVideo ? "mp4" : "jpg");
     const filename = `${crypto.randomUUID()}.${ext}`;
     
     // Get folder from form data, default to 'products' for backward compatibility

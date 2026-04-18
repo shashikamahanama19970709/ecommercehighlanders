@@ -55,7 +55,7 @@ export default function CartPage() {
                   {typeof item.product.brand === 'object' ? item.product.brand.name : item.product.brand} - {item.product.name}
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  ${item.product.price.toFixed(2)}
+                  £{item.product.price.toFixed(2)}
                 </p>
               </div>
 
@@ -78,7 +78,7 @@ export default function CartPage() {
               </div>
 
               <div className="text-right">
-                <p className="font-medium">${(item.product.price * item.quantity).toFixed(2)}</p>
+                <p className="font-medium">£{(item.product.price * item.quantity).toFixed(2)}</p>
               </div>
 
               <button
@@ -93,7 +93,7 @@ export default function CartPage() {
 
         <div className="mt-8 flex items-center justify-between rounded-lg border p-4">
           <div>
-            <p className="text-lg font-semibold">Total: ${total.toFixed(2)}</p>
+            <p className="text-lg font-semibold">Total: £{total.toFixed(2)}</p>
           </div>
           <Link
             href="/checkout"

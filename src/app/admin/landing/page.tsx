@@ -4,8 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import type { Product, Sport } from '@/types/product';
 import type { ShopBySportModule } from '@/types/shop-by-sport';
+import type { LandingHeroBannerModule } from '@/types/landing-hero-banner';
+import { NoticeBanner, type Notice } from '@/components/notice-banner';
 
-type ModuleName = 'about-us' | 'shop-by-sport';
+type ModuleName = 'about-us' | 'shop-by-sport' | 'hero-banner';
 
 type AboutUsPayload = {
   title: string;
@@ -23,7 +25,14 @@ type EntryDraft = {
   productIds: string[];
 };
 
+type HeroBannerDraft = {
+  sportId: string;
+  videoKey?: string;
+  videoUrl?: string;
+};
+
 const MAX_SPORTS = 5;
+const MAX_HERO_SPORTS = 3;
 const MIN_PRODUCTS = 1;
 const MAX_PRODUCTS = 4;
 
@@ -53,6 +62,9 @@ async function uploadImage(file: File) {
 
 export default function AdminLandingPage() {
   const [openModule, setOpenModule] = useState<ModuleName | null>('about-us');
+  const [notice, setNotice] = useState<Notice>(null);
+  const [sandboxEnabled, setSandboxEnabled] = useState(true);
+  const [isSavingSandbox, setIsSavingSandbox] = useState(false);
   const [isSavingAbout, setIsSavingAbout] = useState(false);
   const [form, setForm] = useState<AboutUsPayload>({ title: '', description: '' });
 
@@ -64,6 +76,11 @@ export default function AdminLandingPage() {
   const [isShopLoading, setIsShopLoading] = useState(false);
   const [isShopSaving, setIsShopSaving] = useState(false);
 
+  const [heroEntries, setHeroEntries] = useState<HeroBannerDraft[]>([]);
+  const [heroModuleDoc, setHeroModuleDoc] = useState<LandingHeroBannerModule | null>(null);
+  const [isHeroLoading, setIsHeroLoading] = useState(false);
+  const [isHeroSaving, setIsHeroSaving] = useState(false);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [draft, setDraft] = useState<EntryDraft>(emptyDraft());
@@ -71,6 +88,17 @@ export default function AdminLandingPage() {
   const [productQuery, setProductQuery] = useState('');
 
   useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/payment', { cache: 'no-store' });
+        if (!res.ok) return;
+        const out = (await res.json()) as { sandboxEnabled?: boolean };
+        if (typeof out?.sandboxEnabled === 'boolean') setSandboxEnabled(out.sandboxEnabled);
+      } catch {
+        // Ignore settings load errors.
+      }
+    })();
+
     (async () => {
       const res = await fetch('/api/landing/about-us', { cache: 'no-store' });
       if (!res.ok) return;
@@ -86,6 +114,33 @@ export default function AdminLandingPage() {
       });
     })();
   }, []);
+
+  const saveSandboxSetting = async (next: boolean) => {
+    setIsSavingSandbox(true);
+    try {
+      const res = await fetch('/api/settings/payment', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sandboxEnabled: next }),
+      });
+
+      if (!res.ok) {
+        const out = await res.json().catch(() => ({}));
+        setNotice({ type: 'error', message: (out as any)?.message ?? 'Landing update failed.' });
+        return;
+      }
+
+      setSandboxEnabled(next);
+      setNotice({
+        type: 'success',
+        message: `Landing updated successfully.`,
+      });
+    } catch {
+      setNotice({ type: 'error', message: 'Landing update failed.' });
+    } finally {
+      setIsSavingSandbox(false);
+    }
+  };
 
   const loadShopBySport = async () => {
     setIsShopLoading(true);
@@ -124,14 +179,155 @@ export default function AdminLandingPage() {
     }
   };
 
+  const loadHeroBanner = async () => {
+    setIsHeroLoading(true);
+    try {
+      const [sportsRes, heroRes] = await Promise.all([
+        fetch('/api/sports', { cache: 'no-store' }),
+        fetch('/api/landing/hero-banner', { cache: 'no-store' }),
+      ]);
+
+      const sportsData = (await sportsRes.json()) as Sport[];
+      const heroData = (await heroRes.json()) as LandingHeroBannerModule;
+
+      setSports(Array.isArray(sportsData) ? sportsData : []);
+      setHeroModuleDoc(heroData);
+
+      const existingEntries: HeroBannerDraft[] = Array.isArray(heroData?.entries)
+        ? heroData.entries
+            .slice(0, MAX_HERO_SPORTS)
+            .map((e) => ({
+              sportId: typeof e.sport === 'string' ? e.sport : e.sport?._id ?? '',
+              videoKey: e.videoKey,
+              videoUrl: e.videoUrl,
+            }))
+            .filter((e) => Boolean(e.sportId))
+        : [];
+
+      setHeroEntries(existingEntries);
+    } finally {
+      setIsHeroLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (openModule !== 'shop-by-sport') return;
     void loadShopBySport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openModule]);
 
+  useEffect(() => {
+    if (openModule !== 'hero-banner') return;
+    void loadHeroBanner();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openModule]);
+
   const toggleModule = (module: ModuleName) => {
     setOpenModule((prev) => (prev === module ? null : module));
+  };
+
+  const uploadHeroVideo = async (file: File) => {
+    if (!file.type.startsWith('video/')) {
+      setNotice({ type: 'error', message: 'Landing upload failed.' });
+      return null as { key: string; signedUrl: string } | null;
+    }
+    if (file.size > 50 * 1024 * 1024) {
+      setNotice({ type: 'error', message: 'Landing upload failed.' });
+      return null;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'landing-hero');
+
+    const res = await fetch('/api/upload', { method: 'POST', body: formData });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      setNotice({
+        type: 'error',
+        message: (err as any)?.message ? `Landing upload failed: ${(err as any).message}` : 'Landing upload failed.',
+      });
+      return null;
+    }
+
+    return (await res.json()) as { key: string; signedUrl: string };
+  };
+
+  const onToggleHeroSport = (sportId: string, checked: boolean) => {
+    setHeroEntries((prev) => {
+      const exists = prev.some((e) => e.sportId === sportId);
+      if (checked) {
+        if (exists) return prev;
+        if (prev.length >= MAX_HERO_SPORTS) {
+          setNotice({ type: 'error', message: `You can select at most ${MAX_HERO_SPORTS} sports` });
+          return prev;
+        }
+        return [...prev, { sportId }];
+      }
+
+      if (!exists) return prev;
+      return prev.filter((e) => e.sportId !== sportId);
+    });
+  };
+
+  const onUploadHeroVideoForSport = async (sportId: string, file: File | null) => {
+    if (!file) return;
+    const uploaded = await uploadHeroVideo(file);
+    if (!uploaded) return;
+
+    setHeroEntries((prev) =>
+      prev.map((e) => (e.sportId === sportId ? { ...e, videoKey: uploaded.key, videoUrl: uploaded.signedUrl } : e))
+    );
+  };
+
+  const validateHeroEntries = () => {
+    if (heroEntries.length === 0) return 'Select at least 1 sport';
+    if (heroEntries.length > MAX_HERO_SPORTS) return `You can select at most ${MAX_HERO_SPORTS} sports`;
+
+    const unique = new Set(heroEntries.map((e) => e.sportId));
+    if (unique.size !== heroEntries.length) return 'Each sport can only be selected once';
+
+    for (const e of heroEntries) {
+      if (!e.sportId) return 'Each entry must have a sport';
+      if (!e.videoKey) return 'Upload a video for each selected sport';
+    }
+    return null;
+  };
+
+  const saveHeroBannerModule = async () => {
+    const err = validateHeroEntries();
+    if (err) {
+      setNotice({ type: 'error', message: err });
+      return;
+    }
+
+    setIsHeroSaving(true);
+    try {
+      const payload = {
+        isActive: true,
+        entries: heroEntries.slice(0, MAX_HERO_SPORTS).map((e) => ({
+          sport: e.sportId,
+          videoKey: e.videoKey,
+        })),
+      };
+
+      const res = await fetch('/api/landing/hero-banner', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const out = await res.json().catch(() => ({}));
+        setNotice({ type: 'error', message: (out as any)?.message ?? 'Landing update failed.' });
+        return;
+      }
+
+      setNotice({ type: 'success', message: 'Landing updated successfully.' });
+      await loadHeroBanner();
+    } finally {
+      setIsHeroSaving(false);
+    }
   };
 
   const onSave = async () => {
@@ -148,9 +344,9 @@ export default function AdminLandingPage() {
         }),
       });
       if (!res.ok) throw new Error('Save failed');
-      alert('About Us saved');
+      setNotice({ type: 'success', message: 'Landing updated successfully.' });
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Save failed');
+      setNotice({ type: 'error', message: e instanceof Error ? e.message : 'Landing update failed.' });
     } finally {
       setIsSavingAbout(false);
     }
@@ -168,7 +364,7 @@ export default function AdminLandingPage() {
           : { ...prev, image2Key: key, image2Url: url }
       );
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Upload failed');
+      setNotice({ type: 'error', message: e instanceof Error ? e.message : 'Landing upload failed.' });
     }
   };
 
@@ -265,11 +461,11 @@ export default function AdminLandingPage() {
 
   const uploadHeroImageForDraft = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      setNotice({ type: 'error', message: 'Landing upload failed.' });
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      setNotice({ type: 'error', message: 'Landing upload failed.' });
       return;
     }
 
@@ -282,7 +478,10 @@ export default function AdminLandingPage() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(`Upload failed: ${(err as any)?.message ?? 'Unknown error'}`);
+        setNotice({
+          type: 'error',
+          message: (err as any)?.message ? `Landing upload failed: ${(err as any).message}` : 'Landing upload failed.',
+        });
         return;
       }
 
@@ -299,15 +498,15 @@ export default function AdminLandingPage() {
 
   const saveDraftToList = () => {
     if (!draft.sportId) {
-      alert('Select a sport');
+      setNotice({ type: 'error', message: 'Select a sport' });
       return;
     }
     if (!draft.heroImageKey) {
-      alert('Upload a hero image');
+      setNotice({ type: 'error', message: 'Upload a hero image' });
       return;
     }
     if (draft.productIds.length < MIN_PRODUCTS || draft.productIds.length > MAX_PRODUCTS) {
-      alert(`Select ${MIN_PRODUCTS}–${MAX_PRODUCTS} products`);
+      setNotice({ type: 'error', message: `Select ${MIN_PRODUCTS}–${MAX_PRODUCTS} products` });
       return;
     }
 
@@ -358,7 +557,7 @@ export default function AdminLandingPage() {
   const saveShopBySportModule = async () => {
     const err = validateEntries();
     if (err) {
-      alert(err);
+      setNotice({ type: 'error', message: err });
       return;
     }
 
@@ -381,11 +580,11 @@ export default function AdminLandingPage() {
 
       if (!res.ok) {
         const out = await res.json().catch(() => ({}));
-        alert((out as any)?.message ?? 'Failed to save');
+        setNotice({ type: 'error', message: (out as any)?.message ?? 'Landing update failed.' });
         return;
       }
 
-      alert('Shop by sport module saved');
+      setNotice({ type: 'success', message: 'Landing updated successfully.' });
       await loadShopBySport();
     } finally {
       setIsShopSaving(false);
@@ -417,7 +616,32 @@ export default function AdminLandingPage() {
           <h1 className="text-lg font-semibold tracking-tight text-foreground">Landing page</h1>
           <p className="text-sm text-muted-foreground">Configure landing page modules.</p>
         </div>
+
+        <div className="flex items-center gap-3 rounded-full border bg-background px-4 py-2">
+          <div className="min-w-0">
+            <p className="text-xs font-medium text-foreground">Sandbox mode</p>
+            <p className="text-[11px] text-muted-foreground">Use Stripe test keys for checkout</p>
+          </div>
+          <button
+            type="button"
+            disabled={isSavingSandbox}
+            onClick={() => saveSandboxSetting(!sandboxEnabled)}
+            className={`relative h-6 w-11 flex-none rounded-full border transition disabled:opacity-60 ${
+              sandboxEnabled ? 'bg-foreground border-foreground' : 'bg-muted border-border'
+            }`}
+            aria-pressed={sandboxEnabled}
+            aria-label="Toggle sandbox mode"
+          >
+            <span
+              className={`absolute top-1/2 h-5 w-5 -translate-y-1/2 rounded-full bg-background transition ${
+                sandboxEnabled ? 'left-[22px]' : 'left-[2px]'
+              }`}
+            />
+          </button>
+        </div>
       </div>
+
+      <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
       <div className="rounded-2xl border bg-background">
         <button
@@ -516,6 +740,114 @@ export default function AdminLandingPage() {
                 {isSavingAbout ? 'Saving...' : 'Save'}
               </button>
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border bg-background">
+        <button
+          type="button"
+          onClick={() => toggleModule('hero-banner')}
+          aria-expanded={openModule === 'hero-banner'}
+          className="flex w-full items-center gap-3 px-5 py-4 text-left"
+        >
+          <span className="text-base font-semibold text-foreground">{openModule === 'hero-banner' ? '−' : '+'}</span>
+          <span className="text-base font-semibold text-foreground">Landing Hero Banner</span>
+        </button>
+
+        {openModule === 'hero-banner' && (
+          <div className="space-y-6 border-t p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Landing hero banner</h2>
+                <p className="text-sm text-muted-foreground">Select up to {MAX_HERO_SPORTS} sports and upload one video per sport.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={loadHeroBanner}
+                  className="cursor-pointer rounded-full border border-border bg-background px-3 py-2 text-xs hover:bg-accent"
+                >
+                  Refresh
+                </button>
+                <button
+                  type="button"
+                  disabled={isHeroSaving}
+                  onClick={saveHeroBannerModule}
+                  className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+                >
+                  {isHeroSaving ? 'Saving…' : 'Save module'}
+                </button>
+              </div>
+            </div>
+
+            {isHeroLoading ? (
+              <div className="rounded-lg border border-dashed bg-muted p-6 text-center text-xs text-muted-foreground">Loading…</div>
+            ) : (
+              <>
+                <div className="rounded-2xl border bg-background p-4">
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Select sports</h3>
+                  <p className="mt-1 text-[11px] text-muted-foreground">Selected {heroEntries.length} / {MAX_HERO_SPORTS}</p>
+
+                  <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {sports.map((s) => {
+                      const id = s._id ?? '';
+                      if (!id) return null;
+                      const checked = heroEntries.some((e) => e.sportId === id);
+                      const disableUnchecked = !checked && heroEntries.length >= MAX_HERO_SPORTS;
+                      return (
+                        <label
+                          key={id}
+                          className={
+                            'flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm ' +
+                            (disableUnchecked ? 'opacity-60' : 'hover:bg-accent')
+                          }
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={disableUnchecked}
+                            onChange={(e) => onToggleHeroSport(id, e.target.checked)}
+                          />
+                          <span className="truncate">{s.name}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+                  {heroEntries.map((entry) => {
+                    const name = sportsById.get(entry.sportId)?.name ?? 'Sport';
+                    return (
+                      <article
+                        key={entry.sportId}
+                        className="flex flex-col overflow-hidden rounded-2xl border bg-background shadow-sm"
+                      >
+                        <div className="relative h-40 w-full bg-muted">
+                          {entry.videoUrl ? (
+                            <video src={entry.videoUrl} className="h-full w-full object-cover" muted playsInline controls />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">No video uploaded</div>
+                          )}
+                        </div>
+                        <div className="flex flex-1 flex-col gap-2 p-4 text-xs">
+                          <p className="truncate text-sm font-semibold text-foreground">{name}</p>
+                          <div className="space-y-2">
+                            <label className="text-[11px] font-medium text-muted-foreground">Upload video</label>
+                            <input
+                              type="file"
+                              accept="video/*"
+                              onChange={(e) => onUploadHeroVideoForSport(entry.sportId, e.target.files?.[0] ?? null)}
+                            />
+                          </div>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
         )}
       </div>

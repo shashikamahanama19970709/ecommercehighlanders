@@ -12,6 +12,7 @@ interface PopularCategoriesProps {
 export function PopularCategories({ sports }: PopularCategoriesProps) {
   const sliderRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [didDrag, setDidDrag] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -20,7 +21,7 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
   const loopedSports = [...sports, ...sports, ...sports];
 
   // Calculate the width of one set of sports
-  const itemWidth = 192; // w-48 (192px) from the className
+  const itemWidth = 208; // w-52 (208px) from the className
   const gap = 16; // gap-4 (16px)
   const totalItemWidth = itemWidth + gap;
   const sportsSetWidth = sports.length * totalItemWidth;
@@ -72,16 +73,19 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
   // Mouse events
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
+    setDidDrag(false);
     setStartX(e.pageX - (sliderRef.current?.offsetLeft || 0));
     setScrollLeft(sliderRef.current?.scrollLeft || 0);
   };
 
   const handleMouseLeave = () => {
     setIsDragging(false);
+    setTimeout(() => setDidDrag(false), 0);
   };
 
   const handleMouseUp = () => {
     setIsDragging(false);
+    setTimeout(() => setDidDrag(false), 0);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -89,6 +93,7 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
     e.preventDefault();
     const x = e.pageX - (sliderRef.current?.offsetLeft || 0);
     const walk = (x - startX) * 2; // Scroll speed multiplier
+    if (Math.abs(walk) > 6) setDidDrag(true);
     if (sliderRef.current) {
       sliderRef.current.scrollLeft = scrollLeft - walk;
     }
@@ -97,18 +102,21 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
   // Touch events
   const handleTouchStart = (e: React.TouchEvent) => {
     setIsDragging(true);
+    setDidDrag(false);
     setStartX(e.touches[0].pageX - (sliderRef.current?.offsetLeft || 0));
     setScrollLeft(sliderRef.current?.scrollLeft || 0);
   };
 
   const handleTouchEnd = () => {
     setIsDragging(false);
+    setTimeout(() => setDidDrag(false), 0);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDragging) return;
     const x = e.touches[0].pageX - (sliderRef.current?.offsetLeft || 0);
     const walk = (x - startX) * 2; // Scroll speed multiplier
+    if (Math.abs(walk) > 6) setDidDrag(true);
     if (sliderRef.current) {
       sliderRef.current.scrollLeft = scrollLeft - walk;
     }
@@ -188,32 +196,40 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
           onTouchMove={handleTouchMove}
         >
           {loopedSports.map((sport, index) => (
-            <div
+            <Link
               key={`${sport._id}-${index}`}
-              className="flex-shrink-0 w-48 cursor-pointer group select-none"
+              href={sport._id ? `/shop-by-sport?sportId=${sport._id}` : '/shop-by-sport'}
+              className="flex-shrink-0 w-52 group select-none"
+              draggable={false}
+              onClick={(e) => {
+                if (didDrag) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }
+              }}
             >
               <div className="relative overflow-hidden rounded-none p-6 transition hover:-translate-y-1">
                 <div className="flex flex-col items-center text-center space-y-3">
-                  <div className="flex h-36 w-36 items-center justify-center">
+                  <div className="flex h-40 w-40 items-center justify-center">
                     {sport.imageUrl ? (
                       <Image
                         src={sport.imageUrl}
                         alt={sport.name}
-                        width={112}
-                        height={112}
+                        width={128}
+                        height={128}
                         className="object-cover"
+                        draggable={false}
                       />
                     ) : (
-                      <div className="flex h-28 w-28 items-center justify-center text-foreground text-lg font-bold">
+                      <div className="flex h-32 w-32 items-center justify-center text-foreground text-xl font-bold">
                         {sport.name.charAt(0).toUpperCase()}
                       </div>
                     )}
                   </div>
-                  <h3 className="text-lg font-semibold text-foreground">{sport.name}</h3>
-                  
+                  <h3 className="text-xl font-semibold text-foreground">{sport.name}</h3>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>

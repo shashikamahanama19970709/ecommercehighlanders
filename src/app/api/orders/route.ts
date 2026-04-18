@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    const result = await ordersCol.insertOne(order as any);
+    const result = await ordersCol.insertOne(order as Order);
 
     return NextResponse.json({ ...order, _id: result.insertedId.toString() }, { status: 201 });
   } catch (error) {

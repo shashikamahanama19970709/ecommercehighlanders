@@ -1,32 +1,59 @@
+"use client";
+
 import Link from 'next/link';
-import type { Sport } from '@/types/product';
+import { useEffect, useMemo, useState } from 'react';
 import type { ShopBySportModule } from '@/types/shop-by-sport';
 
-async function fetchShopBySportModule() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/shop-by-sport`, {
-    cache: "no-store",
+async function fetchShopBySportModule(signal?: AbortSignal) {
+  const res = await fetch('/api/shop-by-sport', {
+    cache: 'no-store',
+    signal,
   });
 
   if (!res.ok) return null;
   return (await res.json()) as ShopBySportModule;
 }
 
-export default async function Footer() {
-  const shopBySportModule = await fetchShopBySportModule();
+export default function Footer() {
+  const [shopBySportModule, setShopBySportModule] = useState<ShopBySportModule | null>(null);
   const currentYear = new Date().getFullYear();
 
+  useEffect(() => {
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        const data = await fetchShopBySportModule(controller.signal);
+        setShopBySportModule(data);
+      } catch (error) {
+        // Avoid unhandled promise rejections / noisy logs in the browser.
+        if (controller.signal.aborted) return;
+        setShopBySportModule(null);
+      }
+    })();
+
+    return () => controller.abort();
+  }, []);
+
   // Extract unique sports from shop by sport entries
-  const sports = Array.isArray(shopBySportModule?.entries)
-    ? shopBySportModule.entries
-        .map(entry => entry.sport)
-        .filter((sport) =>
-          sport && typeof sport === 'object' && '_id' in sport && 'name' in sport && typeof sport._id === 'string' && typeof sport.name === 'string'
-        )
-        .map(sport => sport as { _id: string; name: string })
-        .filter((sport, index, self) =>
-          self.findIndex(s => s._id === sport._id) === index
-        )
-    : [];
+  const sports = useMemo(() => {
+    if (!Array.isArray(shopBySportModule?.entries)) return [];
+
+    return shopBySportModule.entries
+      .map((entry) => entry.sport)
+      .filter((sport) => {
+        return (
+          !!sport &&
+          typeof sport === 'object' &&
+          '_id' in sport &&
+          'name' in sport &&
+          typeof (sport as { _id?: unknown })._id === 'string' &&
+          typeof (sport as { name?: unknown }).name === 'string'
+        );
+      })
+      .map((sport) => sport as { _id: string; name: string })
+      .filter((sport, index, self) => self.findIndex((s) => s._id === sport._id) === index);
+  }, [shopBySportModule]);
 
   return (
     <footer className="bg-gray-900 text-white">

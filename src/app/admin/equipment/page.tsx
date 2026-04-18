@@ -1,404 +1,400 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Wrench, Plus, Edit, Trash2, X, Search, Filter } from 'lucide-react';
-import type { Equipment } from '@/types/product';
+import { useEffect, useMemo, useState } from 'react';
+import type { FieldDefinition, Sport } from '@/types/product';
+import { NoticeBanner, type Notice } from '@/components/notice-banner';
 
-const equipmentSchema = z.object({
-  name: z.string().min(1, 'Equipment name is required'),
-  sport: z.string().min(1, 'Sport is required'),
-  stock: z.number().min(0, 'Stock must be 0 or greater'),
-  price: z.number().min(0, 'Price must be 0 or greater'),
-  status: z.enum(['available', 'out_of_stock', 'discontinued']),
-});
+type SpecFieldDraft = {
+  name: string;
+  label: string;
+  type: FieldDefinition['type'];
+  optionsText: string;
+  required: boolean;
+};
 
-type EquipmentFormData = z.infer<typeof equipmentSchema>;
+type Template = {
+  _id?: string;
+  name: string;
+  label: string;
+  type: FieldDefinition['type'];
+  options?: string[];
+};
 
-export default function AdminEquipmentPage() {
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [sports, setSports] = useState<{ _id: string; name: string }[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingEquipment, setEditingEquipment] = useState<Equipment | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+function toSlug(input: string): string {
+  return input
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
 
-  const { control, handleSubmit, reset, setValue, formState: { errors } } = useForm<EquipmentFormData>({
-    resolver: zodResolver(equipmentSchema),
-    defaultValues: {
-      name: '',
-      sport: '',
-      stock: 0,
-      price: 0,
-      status: 'available',
-    },
-  });
+function optionsToText(options?: string[]): string {
+  if (!options || options.length === 0) return '';
+  return options.join(', ');
+}
 
-  // Fetch equipment and sports
+function textToOptions(optionsText: string): string[] {
+  return optionsText
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+export default function AdminEquipmentSpecificationsPage() {
+  const [sports, setSports] = useState<Sport[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+
+  const [notice, setNotice] = useState<Notice>(null);
+
+  const [selectedSportId, setSelectedSportId] = useState<string>('');
+  const [selectedEquipmentType, setSelectedEquipmentType] = useState<string>('');
+
+  const [fields, setFields] = useState<SpecFieldDraft[]>([]);
+  const [isLoadingSchema, setIsLoadingSchema] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [templateToAdd, setTemplateToAdd] = useState<string>('');
+
   useEffect(() => {
-    fetchEquipment();
-    fetchSports();
+    const run = async () => {
+      const [sportsRes, templatesRes] = await Promise.all([
+        fetch('/api/sports', { cache: 'no-store' }),
+        fetch('/api/specification-fields', { cache: 'no-store' }),
+      ]);
+
+      const sportsData = (await sportsRes.json()) as Sport[];
+      setSports(Array.isArray(sportsData) ? sportsData : []);
+
+      const templateData = (await templatesRes.json()) as Template[];
+      setTemplates(Array.isArray(templateData) ? templateData : []);
+    };
+
+    void run();
   }, []);
 
-  const fetchEquipment = async () => {
-    const response = await fetch('/api/equipment');
-    const data = await response.json();
-    setEquipment(data);
+  const selectedSport = useMemo(
+    () => sports.find((s) => s?._id === selectedSportId) ?? null,
+    [sports, selectedSportId]
+  );
+
+  const equipmentTypes = useMemo(() => {
+    const types = Array.isArray(selectedSport?.equipmentTypes) ? selectedSport!.equipmentTypes : [];
+    return [...new Set(types.map((t) => String(t).trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  }, [selectedSport]);
+
+  useEffect(() => {
+    // Reset equipment + fields if sport changes.
+    setSelectedEquipmentType('');
+    setFields([]);
+  }, [selectedSportId]);
+
+  useEffect(() => {
+    if (!selectedEquipmentType) {
+      setFields([]);
+      return;
+    }
+
+    const run = async () => {
+      setIsLoadingSchema(true);
+      try {
+        const res = await fetch(`/api/schemas?type=${encodeURIComponent(selectedEquipmentType)}`, { cache: 'no-store' });
+        if (!res.ok) {
+          setFields([]);
+          return;
+        }
+        const data = await res.json();
+        const incoming = Array.isArray(data?.fields) ? (data.fields as FieldDefinition[]) : [];
+        setFields(
+          incoming.map((f) => ({
+            name: typeof f?.name === 'string' ? f.name : '',
+            label: typeof f?.label === 'string' ? f.label : '',
+            type: (f?.type ?? 'text') as FieldDefinition['type'],
+            optionsText: optionsToText(f?.options),
+            required: Boolean(f?.required),
+          }))
+        );
+      } finally {
+        setIsLoadingSchema(false);
+      }
+    };
+
+    void run();
+  }, [selectedEquipmentType]);
+
+  const addBlankField = () => {
+    setFields((prev) => [
+      ...prev,
+      { name: '', label: '', type: 'text', optionsText: '', required: false },
+    ]);
   };
 
-  const fetchSports = async () => {
-    const response = await fetch('/api/sports');
-    const data = await response.json();
-    setSports(data);
+  const addFromTemplate = () => {
+    if (!templateToAdd) return;
+    const found = templates.find((t) => t.name === templateToAdd);
+    if (!found) return;
+
+    setFields((prev) => [
+      ...prev,
+      {
+        name: found.name,
+        label: found.label,
+        type: found.type,
+        optionsText: optionsToText(found.options),
+        required: false,
+      },
+    ]);
+    setTemplateToAdd('');
   };
 
-  const onSubmit = async (data: EquipmentFormData) => {
-    setIsSubmitting(true);
+  const updateField = (index: number, patch: Partial<SpecFieldDraft>) => {
+    setFields((prev) => prev.map((f, i) => (i === index ? { ...f, ...patch } : f)));
+  };
+
+  const removeField = (index: number) => {
+    setFields((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const saveSchema = async () => {
+    if (!selectedEquipmentType) {
+      setNotice({ type: 'error', message: 'Equipment Specifications save failed.' });
+      return;
+    }
+
+    setIsSaving(true);
     try {
-      const url = editingEquipment ? `/api/equipment/${editingEquipment._id}` : '/api/equipment';
-      const method = editingEquipment ? 'PUT' : 'POST';
+      const payload = {
+        equipmentType: selectedEquipmentType,
+        fields: fields.map((f) => ({
+          name: f.name.trim(),
+          label: f.label.trim(),
+          type: f.type,
+          options: f.type === 'select' ? textToOptions(f.optionsText) : [],
+          required: f.required,
+        })),
+      };
 
-      const response = await fetch(url, {
-        method,
+      const res = await fetch('/api/schemas', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        await fetchEquipment();
-        setIsModalOpen(false);
-        reset();
-        setEditingEquipment(null);
-      } else {
-        alert('Error saving equipment');
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setNotice({ type: 'error', message: err?.message || 'Equipment Specifications save failed.' });
+        return;
       }
+
+      setNotice({ type: 'success', message: 'Equipment Specifications saved successfully.' });
+
+      // Refresh template library so newly-saved fields become selectable.
+      const templatesRes = await fetch('/api/specification-fields', { cache: 'no-store' });
+      const templateData = (await templatesRes.json()) as Template[];
+      setTemplates(Array.isArray(templateData) ? templateData : []);
     } catch {
-      alert('Error saving equipment');
+      setNotice({ type: 'error', message: 'Equipment Specifications save failed.' });
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleEdit = (item: Equipment) => {
-    setEditingEquipment(item);
-    setValue('name', item.name);
-    setValue('sport', item.sport?._id ?? '');
-    setValue('stock', item.stock);
-    setValue('price', item.price);
-    setValue('status', item.status);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (equipmentId: string) => {
-    if (!confirm('Are you sure you want to delete this equipment?')) return;
-
-    try {
-      const response = await fetch(`/api/equipment/${equipmentId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        await fetchEquipment();
-      } else {
-        alert('Error deleting equipment');
-      }
-    } catch {
-      alert('Error deleting equipment');
-    }
-  };
-
-  // Filter equipment based on search and status
-  const filteredEquipment = equipment.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.sport.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || item.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available':
-        return 'bg-green-100 text-green-800';
-      case 'out_of_stock':
-        return 'bg-red-100 text-red-800';
-      case 'discontinued':
-        return 'bg-gray-100 text-gray-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      setIsSaving(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 p-6">
-      <div className="mx-auto max-w-7xl">
-        <div className="mb-8 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Equipment Management</h1>
-            <p className="text-gray-600">Manage equipment inventory and stock levels</p>
-          </div>
-          <button
-            onClick={() => {
-              setEditingEquipment(null);
-              reset();
-              setIsModalOpen(true);
-            }}
-            className="cursor-pointer flex items-center gap-2 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-          >
-            <Plus className="h-4 w-4" />
-            Add Equipment
-          </button>
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-6">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground">Equipment Specifications</h1>
+          <p className="text-muted-foreground">
+            Select Sport → Equipment Type, then define the specification fields that will appear under Product Specifications.
+          </p>
         </div>
 
-        {/* Filters */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search equipment or sport..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-md border border-gray-300 pl-10 pr-4 py-2 focus:border-green-500 focus:outline-none"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-gray-400" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-2 focus:border-green-500 focus:outline-none"
-            >
-              <option value="all">All Status</option>
-              <option value="available">Available</option>
-              <option value="out_of_stock">Out of Stock</option>
-              <option value="discontinued">Discontinued</option>
-            </select>
-          </div>
-        </div>
+        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
-        {/* Equipment Table */}
-        <div className="overflow-hidden rounded-xl bg-white/80 backdrop-blur-sm shadow-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Equipment</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Sport</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Stock</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Price</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Status</th>
-                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredEquipment.map((item) => (
-                  <tr key={item._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100">
-                          <Wrench className="h-5 w-5 text-green-600" />
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{item.name}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{item.sport.name}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">
-                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        item.stock > 10 ? 'bg-green-100 text-green-800' :
-                        item.stock > 0 ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {item.stock}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-900">${item.price.toFixed(2)}</td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${getStatusColor(item.status)}`}>
-                        {item.status.replace('_', ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="cursor-pointer p-1 rounded-md text-gray-400 hover:text-green-600 hover:bg-green-50"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item._id)}
-                          className="cursor-pointer p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+        <div className="rounded-2xl border bg-background p-5 shadow-sm">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Sport</label>
+              <select
+                value={selectedSportId}
+                onChange={(e) => setSelectedSportId(e.target.value)}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Select sport</option>
+                {sports.map((s) => (
+                  <option key={s._id} value={s._id}>
+                    {s.name}
+                  </option>
                 ))}
-              </tbody>
-            </table>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Equipment Type</label>
+              <select
+                value={selectedEquipmentType}
+                onChange={(e) => setSelectedEquipmentType(e.target.value)}
+                disabled={!selectedSportId}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
+              >
+                <option value="">Select equipment type</option>
+                {equipmentTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          {filteredEquipment.length === 0 && (
-            <div className="px-6 py-12 text-center">
-              <Wrench className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No equipment found</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || statusFilter !== 'all'
-                  ? 'Try adjusting your search or filters.'
-                  : 'Get started by adding your first equipment item.'}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {editingEquipment ? 'Edit Equipment' : 'Add Equipment'}
-                </h2>
-                <button
-                  onClick={() => {
-                    setIsModalOpen(false);
-                    reset();
-                    setEditingEquipment(null);
-                  }}
-                  className="cursor-pointer rounded-md p-1 text-gray-400 hover:text-gray-600"
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground">Add From Library</label>
+              <div className="flex gap-2">
+                <select
+                  value={templateToAdd}
+                  onChange={(e) => setTemplateToAdd(e.target.value)}
+                  className="min-w-[240px] rounded-md border border-border bg-background px-3 py-2 text-sm"
                 >
-                  <X className="h-5 w-5" />
+                  <option value="">Select a field</option>
+                  {templates.map((t) => (
+                    <option key={t.name} value={t.name}>
+                      {t.label} ({t.name})
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={addFromTemplate}
+                  disabled={!templateToAdd}
+                  className="cursor-pointer rounded-md border border-border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Add
                 </button>
               </div>
+              <p className="text-xs text-muted-foreground">
+                Library grows automatically when you save a schema.
+              </p>
+            </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <Controller
-                  name="name"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Equipment Name</label>
-                      <input
-                        {...field}
-                        type="text"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-green-500 focus:outline-none"
-                        placeholder="Enter equipment name"
-                      />
-                      {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="sport"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Sport</label>
-                      <select
-                        {...field}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-green-500 focus:outline-none"
-                      >
-                        <option value="">Select a sport</option>
-                        {sports.map((sport) => (
-                          <option key={sport._id} value={sport._id}>
-                            {sport.name}
-                          </option>
-                        ))}
-                      </select>
-                      {errors.sport && <p className="text-sm text-red-600">{errors.sport.message}</p>}
-                    </div>
-                  )}
-                />
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Controller
-                    name="stock"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Stock</label>
-                        <input
-                          {...field}
-                          type="number"
-                          min="0"
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-green-500 focus:outline-none"
-                        />
-                        {errors.stock && <p className="text-sm text-red-600">{errors.stock.message}</p>}
-                      </div>
-                    )}
-                  />
-
-                  <Controller
-                    name="price"
-                    control={control}
-                    render={({ field }) => (
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">Price ($)</label>
-                        <input
-                          {...field}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-green-500 focus:outline-none"
-                        />
-                        {errors.price && <p className="text-sm text-red-600">{errors.price.message}</p>}
-                      </div>
-                    )}
-                  />
-                </div>
-
-                <Controller
-                  name="status"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Status</label>
-                      <select
-                        {...field}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-green-500 focus:outline-none"
-                      >
-                        <option value="available">Available</option>
-                        <option value="out_of_stock">Out of Stock</option>
-                        <option value="discontinued">Discontinued</option>
-                      </select>
-                      {errors.status && <p className="text-sm text-red-600">{errors.status.message}</p>}
-                    </div>
-                  )}
-                />
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsModalOpen(false);
-                      reset();
-                      setEditingEquipment(null);
-                    }}
-                    className="cursor-pointer flex-1 rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="cursor-pointer flex-1 rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
-                  >
-                    {isSubmitting ? 'Saving...' : 'Save'}
-                  </button>
-                </div>
-              </form>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={addBlankField}
+                disabled={!selectedEquipmentType}
+                className="cursor-pointer rounded-md border border-border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Add New Field
+              </button>
+              <button
+                type="button"
+                onClick={saveSchema}
+                disabled={!selectedEquipmentType || isSaving}
+                className="cursor-pointer rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isSaving ? 'Saving…' : 'Save'}
+              </button>
             </div>
           </div>
-        )}
+
+          <div className="mt-6">
+            <div className="mb-2 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-foreground">Fields</h2>
+              {isLoadingSchema && <span className="text-xs text-muted-foreground">Loading schema…</span>}
+            </div>
+
+            {selectedEquipmentType && fields.length === 0 && !isLoadingSchema ? (
+              <div className="rounded-xl border border-dashed bg-muted p-6 text-sm text-muted-foreground">
+                No fields yet. Add fields and click Save.
+              </div>
+            ) : null}
+
+            <div className="space-y-3">
+              {fields.map((f, idx) => {
+                const showOptions = f.type === 'select';
+                return (
+                  <div key={`${idx}-${f.name}`} className="rounded-xl border bg-background p-4">
+                    <div className="grid gap-3 md:grid-cols-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Key (name)</label>
+                        <input
+                          value={f.name}
+                          onChange={(e) => updateField(idx, { name: e.target.value })}
+                          onBlur={() => {
+                            if (f.name.trim()) return;
+                            if (!f.label.trim()) return;
+                            updateField(idx, { name: toSlug(f.label) });
+                          }}
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                          placeholder="e.g. weight"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Label</label>
+                        <input
+                          value={f.label}
+                          onChange={(e) => updateField(idx, { label: e.target.value })}
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                          placeholder="e.g. Weight (kg)"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Type</label>
+                        <select
+                          value={f.type}
+                          onChange={(e) => updateField(idx, { type: e.target.value as FieldDefinition['type'] })}
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="text">Text</option>
+                          <option value="number">Number</option>
+                          <option value="weight">Weight</option>
+                          <option value="color">Color</option>
+                          <option value="select">Dropdown</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Required</label>
+                        <div className="flex items-center gap-2 pt-2">
+                          <input
+                            type="checkbox"
+                            checked={f.required}
+                            onChange={(e) => updateField(idx, { required: e.target.checked })}
+                            className="h-4 w-4"
+                          />
+                          <span className="text-sm text-foreground">Yes</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {showOptions && (
+                      <div className="mt-3 space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Dropdown options (comma-separated)</label>
+                        <input
+                          value={f.optionsText}
+                          onChange={(e) => updateField(idx, { optionsText: e.target.value })}
+                          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                          placeholder="e.g. Small, Medium, Large"
+                        />
+                      </div>
+                    )}
+
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => removeField(idx)}
+                        className="cursor-pointer rounded-md border border-border px-3 py-2 text-sm hover:bg-accent"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

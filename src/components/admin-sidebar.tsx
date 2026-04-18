@@ -2,15 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Package, Store, Tag, Trophy, Wrench } from "lucide-react";
+import { LayoutDashboard, Package, Store, Tag, Trophy, Wrench, CreditCard } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Landing", href: "/admin/landing", icon: LayoutDashboard },
   { name: "Sports", href: "/admin/sports", icon: Trophy },
-  { name: "Equipment", href: "/admin/equipment", icon: Wrench },
+  { name: "Equipment Specifications", href: "/admin/equipment", icon: Wrench },
   { name: "Brands", href: "/admin/brands", icon: Tag },
   { name: "Products", href: "/admin/products", icon: Package },
+  { name: "Checkouts", href: "/admin/checkout", icon: CreditCard },
 ];
 
 export function AdminSidebar() {

@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { Plus, Edit, Trash2, X } from 'lucide-react';
 import Image from 'next/image';
 import type { Sport } from '@/types/product';
+import { NoticeBanner, type Notice } from '@/components/notice-banner';
 
 const sportSchema = z.object({
   name: z.string().min(1, 'Sport name is required'),
@@ -23,8 +24,9 @@ export default function AdminSportsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [notice, setNotice] = useState<Notice>(null);
 
-  const { control, handleSubmit, reset, setValue, clearErrors, watch, formState: { errors } } = useForm<SportFormData>({
+  const { control, handleSubmit, reset, setValue, clearErrors, watch, getValues, formState: { errors } } = useForm<SportFormData>({
     resolver: zodResolver(sportSchema),
     defaultValues: {
       name: '',
@@ -32,6 +34,8 @@ export default function AdminSportsPage() {
       imageKey: '',
     },
   });
+
+  const equipmentTypes = watch('equipmentTypes');
 
   // Fetch sports
   useEffect(() => {
@@ -47,13 +51,13 @@ export default function AdminSportsPage() {
   const handleImageUpload = async (file: File) => {
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      setNotice({ type: 'error', message: 'Sports upload failed.' });
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      setNotice({ type: 'error', message: 'Sports upload failed.' });
       return;
     }
 
@@ -77,11 +81,14 @@ export default function AdminSportsPage() {
         clearErrors('imageKey');
       } else {
         const error = await response.json();
-        alert(`Upload failed: ${error.message || 'Unknown error'}`);
+        setNotice({
+          type: 'error',
+          message: error?.message ? `Sports upload failed: ${error.message}` : 'Sports upload failed.',
+        });
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload image. Please try again.');
+      setNotice({ type: 'error', message: 'Sports upload failed.' });
     } finally {
       setUploadingImage(false);
     }
@@ -113,6 +120,10 @@ export default function AdminSportsPage() {
 
       if (response.ok) {
         await fetchSports();
+        setNotice({
+          type: 'success',
+          message: editingSport ? 'Sports updated successfully.' : 'Sports created successfully.',
+        });
         setIsModalOpen(false);
         reset({
           name: '',
@@ -122,10 +133,10 @@ export default function AdminSportsPage() {
         setEditingSport(null);
         setPreviewUrl('');
       } else {
-        alert('Error saving sport');
+        setNotice({ type: 'error', message: editingSport ? 'Sports update failed.' : 'Sports create failed.' });
       }
     } catch {
-      alert('Error saving sport');
+      setNotice({ type: 'error', message: editingSport ? 'Sports update failed.' : 'Sports create failed.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -134,7 +145,7 @@ export default function AdminSportsPage() {
   const handleEdit = (sport: Sport) => {
     setEditingSport(sport);
     setValue('name', sport.name);
-    setValue('equipmentTypes', sport.equipmentTypes);
+    setValue('equipmentTypes', sport.equipmentTypes?.length ? sport.equipmentTypes : ['']);
     setValue('imageKey', sport.imageKey || '');
     setPreviewUrl(sport.imageUrl || '');
     setIsModalOpen(true);
@@ -150,31 +161,32 @@ export default function AdminSportsPage() {
 
       if (response.ok) {
         await fetchSports();
+        setNotice({ type: 'success', message: 'Sports deleted successfully.' });
       } else {
-        alert('Error deleting sport');
+        setNotice({ type: 'error', message: 'Sports delete failed.' });
       }
     } catch {
-      alert('Error deleting sport');
+      setNotice({ type: 'error', message: 'Sports delete failed.' });
     }
   };
 
   const addEquipmentType = () => {
-    const currentTypes = control._formValues.equipmentTypes || [];
-    setValue('equipmentTypes', [...currentTypes, '']);
+    const currentTypes = getValues('equipmentTypes') || [];
+    setValue('equipmentTypes', [...currentTypes, ''], { shouldDirty: true, shouldTouch: true });
   };
 
   const removeEquipmentType = (index: number) => {
-    const currentTypes = control._formValues.equipmentTypes || [];
+    const currentTypes = getValues('equipmentTypes') || [];
     if (currentTypes.length > 1) {
-      setValue('equipmentTypes', currentTypes.filter((_: string, i: number) => i !== index));
+      setValue('equipmentTypes', currentTypes.filter((_: string, i: number) => i !== index), { shouldDirty: true, shouldTouch: true, shouldValidate: true });
     }
   };
 
   const updateEquipmentType = (index: number, value: string) => {
-    const currentTypes = control._formValues.equipmentTypes || [];
+    const currentTypes = getValues('equipmentTypes') || [];
     const newTypes = [...currentTypes];
     newTypes[index] = value;
-    setValue('equipmentTypes', newTypes);
+    setValue('equipmentTypes', newTypes, { shouldDirty: true, shouldTouch: true, shouldValidate: true });
   };
 
   return (
@@ -203,6 +215,8 @@ export default function AdminSportsPage() {
           </button>
         </div>
 
+        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
+
         {/* Sports Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {sports.map((sport) => (
@@ -211,7 +225,7 @@ export default function AdminSportsPage() {
               className="group relative overflow-hidden rounded-xl bg-white/80 backdrop-blur-sm p-6 shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl"
             >
               <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+                <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden">
                   <Image
                     src={sport.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(sport.name)}&background=6366f1&color=ffffff&size=48&font-size=0.6`}
                     alt={sport.name}
@@ -436,7 +450,7 @@ export default function AdminSportsPage() {
                   </div>
 
                   <div className="space-y-2 max-h-40 overflow-y-auto">
-                    {(control._formValues.equipmentTypes as string[])?.map((type, index) => (
+                    {(equipmentTypes || [''])?.map((type, index) => (
                       <div key={index} className="flex gap-2">
                         <input
                           type="text"
@@ -456,7 +470,23 @@ export default function AdminSportsPage() {
                     ))}
                   </div>
 
-                  {errors.equipmentTypes && <p className="text-sm text-red-600">{errors.equipmentTypes.message}</p>}
+                  {Array.isArray(errors.equipmentTypes) ? (
+                    <div className="space-y-1">
+                      {errors.equipmentTypes.map((err, idx) => {
+                        const message = (err as { message?: string } | undefined)?.message;
+                        if (!message) return null;
+                        return (
+                          <p key={idx} className="text-sm text-red-600">
+                            {message}
+                          </p>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    errors.equipmentTypes && (
+                      <p className="text-sm text-red-600">{(errors.equipmentTypes as unknown as { message?: string })?.message}</p>
+                    )
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">

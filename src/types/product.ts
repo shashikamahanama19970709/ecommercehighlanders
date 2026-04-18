@@ -26,7 +26,7 @@ export interface CategorySchema {
 export interface FieldDefinition {
   name: string;
   label: string;
-  type: 'text' | 'number' | 'select';
+  type: 'text' | 'number' | 'weight' | 'color' | 'select';
   options?: string[]; // for select type
   required?: boolean;
 }

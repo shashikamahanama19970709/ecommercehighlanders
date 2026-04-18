@@ -79,3 +79,43 @@ body {
 .cursor-grabbing {
   cursor: grabbing;
 }
+
+@keyframes float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pan-diagonal {
+  0% {
+    object-position: 0% 0%;
+  }
+  50% {
+    object-position: 100% 100%;
+  }
+  100% {
+    object-position: 0% 0%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-float-y {
+    animation: none !important;
+  }
+
+  .animate-pan-diagonal {
+    animation: none !important;
+  }
+}
+
+.animate-float-y {
+  animation: float-y 4s ease-in-out infinite;
+}
+
+.animate-pan-diagonal {
+  animation: pan-diagonal 10s ease-in-out infinite;
+}

@@ -20,6 +20,13 @@ function getName(value: unknown): string {
   return maybe.name ?? '';
 }
 
+function getSportId(value: unknown): string {
+  if (!value) return '';
+  if (typeof value === 'string') return value;
+  const maybe = value as { _id?: unknown };
+  return typeof maybe._id === 'string' ? maybe._id : '';
+}
+
 function extractProducts(entry: ShopBySportEntry): Product[] {
   if (Array.isArray(entry.products) && entry.products.length > 0) return entry.products;
   const populated = Array.isArray(entry.productIds) ? entry.productIds : [];
@@ -45,6 +52,7 @@ export function ShopBySportLandingSection({ moduleDoc }: Props) {
   const selectedEntry = entries[safeSelectedIndex];
 
   const selectedSportName = selectedEntry ? getName(selectedEntry.sport) || 'Sport' : '';
+  const selectedSportId = selectedEntry ? getSportId(selectedEntry.sport) : '';
   const selectedProducts = selectedEntry ? extractProducts(selectedEntry).slice(0, 4) : [];
 
   if (moduleDoc?.isActive === false) return null;
@@ -99,11 +107,11 @@ export function ShopBySportLandingSection({ moduleDoc }: Props) {
             )}
             <div className="absolute inset-0 bg-black/25" />
 
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 p-6 text-center sm:items-end sm:pr-12 sm:text-right">
-              <h3 className="text-5xl font-semibold tracking-tight text-white sm:text-6xl">{selectedSportName}</h3>
+            <div className="absolute top-0 right-0 flex flex-col items-end gap-2 p-6 sm:p-8">
+              <h3 className="text-5xl font-semibold tracking-tight text-white sm:text-6xl mb-2 text-right">{selectedSportName}</h3>
               <Link
-                href="/shop-by-sport"
-                className="cursor-pointer inline-flex items-center justify-center rounded-full bg-background/95 px-5 py-2 text-xs font-medium text-foreground hover:bg-background"
+                href={selectedSportId ? `/shop-by-sport?sportId=${encodeURIComponent(selectedSportId)}` : '/shop-by-sport'}
+                className="cursor-pointer inline-flex items-center justify-center rounded-full bg-background/95 px-5 py-2 text-xs font-medium text-foreground hover:bg-background shadow-md"
               >
                 Shop now
               </Link>
@@ -197,8 +205,8 @@ export function ShopBySportLandingSection({ moduleDoc }: Props) {
                     <p className="truncate text-[12px] font-medium text-foreground/70">{modelLabel}</p>
                     <div className="flex items-center justify-between gap-3 text-xs">
                       <div className="text-sm font-semibold text-foreground">
-                        {price !== undefined ? `$${price.toFixed(2)}` : '—'}
-                        <span className="ml-1 text-[10px] text-muted-foreground">USD</span>
+                        {price !== undefined ? `£${price.toFixed(2)}` : '—'}
+                        <span className="ml-1 text-[10px] text-muted-foreground">GBP</span>
                       </div>
                       <span
                         className={

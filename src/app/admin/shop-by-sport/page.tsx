@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import type { Product, Sport } from '@/types/product';
 import type { ShopBySportModule } from '@/types/shop-by-sport';
+import { NoticeBanner, type Notice } from '@/components/notice-banner';
 
 type EntryDraft = {
   sportId: string;
@@ -24,6 +25,8 @@ export default function AdminShopBySportPage() {
   const [sports, setSports] = useState<Sport[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [moduleDoc, setModuleDoc] = useState<ShopBySportModule | null>(null);
+
+  const [notice, setNotice] = useState<Notice>(null);
 
   const [entries, setEntries] = useState<EntryDraft[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -170,11 +173,11 @@ export default function AdminShopBySportPage() {
 
   const uploadHeroImageForDraft = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      setNotice({ type: 'error', message: 'Shop by sport upload failed.' });
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      setNotice({ type: 'error', message: 'Shop by sport upload failed.' });
       return;
     }
 
@@ -187,7 +190,12 @@ export default function AdminShopBySportPage() {
       const res = await fetch('/api/upload', { method: 'POST', body: formData });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(`Upload failed: ${(err as any)?.message ?? 'Unknown error'}`);
+        setNotice({
+          type: 'error',
+          message: (err as any)?.message
+            ? `Shop by sport upload failed: ${(err as any).message}`
+            : 'Shop by sport upload failed.',
+        });
         return;
       }
 
@@ -204,15 +212,15 @@ export default function AdminShopBySportPage() {
 
   const saveDraftToList = () => {
     if (!draft.sportId) {
-      alert('Select a sport');
+      setNotice({ type: 'error', message: 'Select a sport' });
       return;
     }
     if (!draft.heroImageKey) {
-      alert('Upload a hero image');
+      setNotice({ type: 'error', message: 'Upload a hero image' });
       return;
     }
     if (draft.productIds.length < MIN_PRODUCTS || draft.productIds.length > MAX_PRODUCTS) {
-      alert(`Select ${MIN_PRODUCTS}–${MAX_PRODUCTS} products`);
+      setNotice({ type: 'error', message: `Select ${MIN_PRODUCTS}–${MAX_PRODUCTS} products` });
       return;
     }
 
@@ -265,7 +273,7 @@ export default function AdminShopBySportPage() {
   const saveModule = async () => {
     const err = validateEntries();
     if (err) {
-      alert(err);
+      setNotice({ type: 'error', message: err });
       return;
     }
 
@@ -288,11 +296,11 @@ export default function AdminShopBySportPage() {
 
       if (!res.ok) {
         const out = await res.json().catch(() => ({}));
-        alert((out as any)?.message ?? 'Failed to save');
+        setNotice({ type: 'error', message: (out as any)?.message ?? 'Shop by sport update failed.' });
         return;
       }
 
-      alert('Shop by sport module saved');
+      setNotice({ type: 'success', message: 'Shop by sport updated successfully.' });
       await loadAll();
     } finally {
       setIsSaving(false);
@@ -353,6 +361,8 @@ export default function AdminShopBySportPage() {
             </button>
           </div>
         </div>
+
+        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
         <div className="rounded-2xl border bg-background p-4">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

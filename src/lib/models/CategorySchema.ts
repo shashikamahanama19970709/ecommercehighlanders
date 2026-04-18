@@ -3,7 +3,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface IFieldDefinition {
   name: string;
   label: string;
-  type: 'text' | 'number' | 'select';
+  type: 'text' | 'number' | 'weight' | 'color' | 'select';
   options?: string[];
   required?: boolean;
 }
@@ -16,7 +16,7 @@ export interface ICategorySchema extends Document {
 const FieldDefinitionSchema: Schema = new Schema({
   name: { type: String, required: true },
   label: { type: String, required: true },
-  type: { type: String, required: true, enum: ['text', 'number', 'select'] },
+  type: { type: String, required: true, enum: ['text', 'number', 'weight', 'color', 'select'] },
   options: [{ type: String }],
   required: { type: Boolean, default: false },
 });

@@ -16,7 +16,7 @@ export function AboutUsLandingSection({ moduleDoc }: Props) {
 
   return (
     <section className="py-16">
-      <div className="grid gap-10 lg:grid-cols-[1fr_1.9fr] lg:items-center">
+      <div className="relative grid gap-10 lg:grid-cols-[1fr_1.9fr] lg:items-center">
         <div className="flex flex-col">
           <div className="relative h-96 w-full overflow-hidden bg-muted">
             {image1 ? (
@@ -32,7 +32,7 @@ export function AboutUsLandingSection({ moduleDoc }: Props) {
             )}
           </div>
 
-          <div className="-mt-16 w-2/3 self-end">
+          <div className="-mt-16 w-2/3 self-end relative z-20 lg:translate-x-16">
             <div className="relative h-56 overflow-hidden bg-muted shadow-md">
               {image2 ? (
                 <Image
@@ -48,7 +48,7 @@ export function AboutUsLandingSection({ moduleDoc }: Props) {
             </div>
           </div>
 
-          <div className="mt-16">
+          <div className="mt-5">
             <button
               type="button"
               className="inline-flex items-center justify-center rounded-full bg-red-600 px-8 py-4 text-sm font-semibold text-white"
@@ -59,7 +59,7 @@ export function AboutUsLandingSection({ moduleDoc }: Props) {
           </div>
         </div>
 
-        <div className="bg-muted p-10 lg:p-14 lg:rounded-[40px]">
+        <div className="relative z-10 bg-muted p-10 lg:p-14 lg:rounded-[40px]">
           <p className="text-5xl font-semibold tracking-tight text-foreground">About us</p>
           <p
             className="mt-4 text-5xl font-semibold leading-tight text-foreground/20"

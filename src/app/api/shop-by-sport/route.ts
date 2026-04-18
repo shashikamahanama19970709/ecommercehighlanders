@@ -3,9 +3,8 @@ import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { isValidObjectId } from 'mongoose';
 import { connectToDatabase } from '@/lib/mongodb';
-import ShopBySportModule from '@/lib/models/ShopBySportModule';
-import Sport from '@/lib/models/Sport';
-import Product from '@/lib/models/Product';
+
+
 
 const b2Endpoint = process.env.B2_ENDPOINT;
 const b2Bucket = process.env.B2_BUCKET_NAME;
@@ -66,6 +65,10 @@ export async function GET(request: NextRequest) {
       searchParams.get('includeInactive') === '1' || searchParams.get('includeInactive') === 'true';
 
     await connectToDatabase();
+    const ShopBySportModule = (await import('@/lib/models/ShopBySportModule')).default;
+    const Sport = (await import('@/lib/models/Sport')).default;
+    const Equipment = (await import('@/lib/models/Equipment')).default;
+    const Product = (await import('@/lib/models/Product')).default;
 
     const doc = await ShopBySportModule.findOne(includeInactive ? {} : { isActive: true })
       .populate('entries.sport', 'name')
@@ -145,6 +148,10 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
     await connectToDatabase();
+    const ShopBySportModule = (await import('@/lib/models/ShopBySportModule')).default;
+    const Sport = (await import('@/lib/models/Sport')).default;
+    const Equipment = (await import('@/lib/models/Equipment')).default;
+    const Product = (await import('@/lib/models/Product')).default;
 
     const rawEntries = Array.isArray(body?.entries) ? body.entries : [];
     if (rawEntries.length === 0) {
@@ -158,7 +165,12 @@ export async function PUT(request: NextRequest) {
     const seenSports = new Set<string>();
 
     for (const entry of rawEntries) {
-      const sportId = await resolveSportId(entry?.sport);
+      const sportId = await (async (value: unknown) => {
+        if (typeof value !== 'string' || value.trim() === '') return null;
+        if (isValidObjectId(value)) return value;
+        const sport = await Sport.findOne({ name: value.trim() }).select('_id').lean();
+        return sport?._id?.toString?.() ?? null;
+      })(entry?.sport);
       if (!sportId) {
         return NextResponse.json({ message: 'Invalid sport in entries' }, { status: 400 });
       }

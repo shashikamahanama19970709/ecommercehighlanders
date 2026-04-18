@@ -1,0 +1,2 @@
+// Install rc-slider for a range slider UI
+// npm install rc-slider

@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Image from 'next/image';
 import type { Brand, Sport } from '@/types/product';
+import { NoticeBanner, type Notice } from '@/components/notice-banner';
 
 const brandSchema = z.object({
   name: z.string().min(1, 'Brand name is required'),
@@ -23,6 +24,7 @@ export default function AdminBrandsPage() {
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice>(null);
   const { control, handleSubmit, reset, setValue, clearErrors, watch, formState: { errors } } = useForm<BrandFormData>({
     resolver: zodResolver(brandSchema),
     defaultValues: {
@@ -54,13 +56,13 @@ export default function AdminBrandsPage() {
   const handleImageUpload = async (file: File) => {
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      setNotice({ type: 'error', message: 'Brands upload failed.' });
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      setNotice({ type: 'error', message: 'Brands upload failed.' });
       return;
     }
 
@@ -84,11 +86,14 @@ export default function AdminBrandsPage() {
         clearErrors('logoKey');
       } else {
         const error = await response.json();
-        alert(`Upload failed: ${error.message || 'Unknown error'}`);
+        setNotice({
+          type: 'error',
+          message: error?.message ? `Brands upload failed: ${error.message}` : 'Brands upload failed.',
+        });
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload image. Please try again.');
+      setNotice({ type: 'error', message: 'Brands upload failed.' });
     } finally {
       setUploadingImage(false);
     }
@@ -108,15 +113,19 @@ export default function AdminBrandsPage() {
 
       if (response.ok) {
         await fetchBrands();
+        setNotice({
+          type: 'success',
+          message: editingBrand ? 'Brands updated successfully.' : 'Brands created successfully.',
+        });
         setIsModalOpen(false);
         reset();
         setPreviewUrl(null);
         setEditingBrand(null);
       } else {
-        alert('Error saving brand');
+        setNotice({ type: 'error', message: editingBrand ? 'Brands update failed.' : 'Brands create failed.' });
       }
     } catch {
-      alert('Error saving brand');
+      setNotice({ type: 'error', message: editingBrand ? 'Brands update failed.' : 'Brands create failed.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -142,11 +151,12 @@ export default function AdminBrandsPage() {
 
       if (response.ok) {
         await fetchBrands();
+        setNotice({ type: 'success', message: 'Brands deleted successfully.' });
       } else {
-        alert('Error deleting brand');
+        setNotice({ type: 'error', message: 'Brands delete failed.' });
       }
     } catch {
-      alert('Error deleting brand');
+      setNotice({ type: 'error', message: 'Brands delete failed.' });
     }
   };
 
@@ -160,9 +170,10 @@ export default function AdminBrandsPage() {
 
       if (response.ok) {
         await fetchBrands();
+        setNotice({ type: 'success', message: 'Brands updated successfully.' });
       }
     } catch {
-      alert('Error updating brand status');
+      setNotice({ type: 'error', message: 'Brands update failed.' });
     }
   };
 
@@ -186,6 +197,8 @@ export default function AdminBrandsPage() {
             Add Brand
           </button>
         </div>
+
+        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
         {/* Brands Table */}
         <div className="rounded-xl bg-white/80 backdrop-blur-sm p-6 shadow-lg">

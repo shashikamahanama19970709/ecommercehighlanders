@@ -36,7 +36,7 @@ export function AboutUsSection({ moduleDoc }: Props) {
             </div>
 
             {/* Small overlay image */}
-            <div className="-mt-20 w-2/3 self-end overflow-hidden bg-muted shadow-lg">
+            <div className="-mt-20 w-2/3 self-end overflow-hidden bg-muted shadow-lg relative z-20 lg:translate-x-16">
               <div className="relative h-56">
                 {moduleDoc.image2Url ? (
                   <Image
@@ -55,7 +55,7 @@ export function AboutUsSection({ moduleDoc }: Props) {
             </div>
           </div>
 
-          <div className="bg-muted p-10 lg:p-12">
+          <div className="relative z-10 bg-muted p-10 lg:p-12">
             <p className="text-sm font-semibold tracking-wide text-foreground">About us</p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               {moduleDoc.title}

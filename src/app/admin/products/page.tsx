@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Image from 'next/image';
 import type { Sport, CategorySchema, FieldDefinition, Brand, Product } from '@/types/product';
+import { NoticeBanner, type Notice } from '@/components/notice-banner';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -38,6 +39,8 @@ export default function AdminProductsPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [featureImagePreview, setFeatureImagePreview] = useState<string>('');
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+
+  const [notice, setNotice] = useState<Notice>(null);
 
   const [filters, setFilters] = useState<{ sport: string; equipment: string; brand: string; model: string; stock: StockFilter }>({
     sport: '',
@@ -137,13 +140,13 @@ export default function AdminProductsPage() {
   const handleFeatureImageUpload = async (file: File) => {
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      setNotice({ type: 'error', message: 'Products upload failed.' });
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      setNotice({ type: 'error', message: 'Products upload failed.' });
       return;
     }
 
@@ -165,11 +168,14 @@ export default function AdminProductsPage() {
         clearErrors('featureImageKey');
       } else {
         const error = await response.json();
-        alert(`Upload failed: ${error.message || 'Unknown error'}`);
+        setNotice({
+          type: 'error',
+          message: error?.message ? `Products upload failed: ${error.message}` : 'Products upload failed.',
+        });
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload image. Please try again.');
+      setNotice({ type: 'error', message: 'Products upload failed.' });
     } finally {
       setUploadingImage(false);
     }
@@ -178,13 +184,13 @@ export default function AdminProductsPage() {
   const handleImageUpload = async (file: File) => {
     // Validate file size (10MB limit)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB');
+      setNotice({ type: 'error', message: 'Products upload failed.' });
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+      setNotice({ type: 'error', message: 'Products upload failed.' });
       return;
     }
 
@@ -207,11 +213,14 @@ export default function AdminProductsPage() {
         clearErrors('imageKeys');
       } else {
         const error = await response.json();
-        alert(`Upload failed: ${error.message || 'Unknown error'}`);
+        setNotice({
+          type: 'error',
+          message: error?.message ? `Products upload failed: ${error.message}` : 'Products upload failed.',
+        });
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload image. Please try again.');
+      setNotice({ type: 'error', message: 'Products upload failed.' });
     } finally {
       setUploadingImage(false);
     }
@@ -252,7 +261,7 @@ export default function AdminProductsPage() {
       });
 
       if (response.ok) {
-        alert('Product created successfully!');
+        setNotice({ type: 'success', message: 'Products created successfully.' });
         reset();
         setSchema(null);
         setBrands([]);
@@ -261,10 +270,10 @@ export default function AdminProductsPage() {
         setShowCreateForm(false);
         await fetchProducts();
       } else {
-        alert('Error creating product');
+        setNotice({ type: 'error', message: 'Products create failed.' });
       }
     } catch {
-      alert('Error creating product');
+      setNotice({ type: 'error', message: 'Products create failed.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -296,11 +305,11 @@ export default function AdminProductsPage() {
 
       if (!response.ok) {
         const err = await response.json().catch(() => null);
-        alert(err?.message || 'Error updating product');
+        setNotice({ type: 'error', message: err?.message || 'Products update failed.' });
         return;
       }
 
-      alert('Product updated successfully!');
+      setNotice({ type: 'success', message: 'Products updated successfully.' });
       setEditProduct(null);
       reset();
       setSchema(null);
@@ -309,7 +318,7 @@ export default function AdminProductsPage() {
       setImagePreviews([]);
       await fetchProducts();
     } catch {
-      alert('Error updating product');
+      setNotice({ type: 'error', message: 'Products update failed.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -419,7 +428,7 @@ export default function AdminProductsPage() {
   const submitRestock = async () => {
     if (!restockProduct?._id) return;
     if (!Number.isFinite(restockAmount) || restockAmount <= 0) {
-      alert('Enter a restock amount greater than 0');
+      setNotice({ type: 'error', message: 'Products update failed.' });
       return;
     }
 
@@ -432,7 +441,7 @@ export default function AdminProductsPage() {
       });
 
       if (!response.ok) {
-        alert('Failed to restock');
+        setNotice({ type: 'error', message: 'Products update failed.' });
         return;
       }
 
@@ -444,8 +453,9 @@ export default function AdminProductsPage() {
       );
       closeRestock();
       await fetchProducts();
+      setNotice({ type: 'success', message: 'Products updated successfully.' });
     } catch {
-      alert('Failed to restock');
+      setNotice({ type: 'error', message: 'Products update failed.' });
     } finally {
       setIsRestocking(false);
     }
@@ -504,6 +514,52 @@ export default function AdminProductsPage() {
           />
         );
 
+      case 'weight':
+        return (
+          <Controller
+            key={field.name}
+            name={fieldName}
+            control={control}
+            defaultValue={0}
+            rules={{ required: field.required, min: 0 }}
+            render={({ field: controllerField }) => (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{field.label}</label>
+                <input
+                  {...controllerField}
+                  type="number"
+                  step="0.01"
+                  value={controllerField.value as number || 0}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  onChange={e => controllerField.onChange(parseFloat(e.target.value) || 0)}
+                />
+              </div>
+            )}
+          />
+        );
+
+      case 'color':
+        return (
+          <Controller
+            key={field.name}
+            name={fieldName}
+            control={control}
+            rules={{ required: field.required }}
+            render={({ field: controllerField }) => (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">{field.label}</label>
+                <input
+                  {...controllerField}
+                  type="text"
+                  value={controllerField.value as string || ''}
+                  placeholder="#RRGGBB"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+            )}
+          />
+        );
+
       default:
         return (
           <Controller
@@ -534,6 +590,8 @@ export default function AdminProductsPage() {
           <h1 className="text-3xl font-bold text-foreground">Product Management</h1>
           <p className="text-muted-foreground">Create, view, filter, and restock products</p>
         </div>
+
+        <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
         {/* Actions */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
