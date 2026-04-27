@@ -136,6 +136,9 @@ export async function GET(request: NextRequest) {
       totalUsd: checkoutDoc.totalUsd,
       status: 'paid',
       stripeSessionId: sessionId,
+      shipping: checkoutDoc.shipping,
+      tax: checkoutDoc.tax,
+      discount: checkoutDoc.discount,
       createdAt: now,
       updatedAt: now,
     };

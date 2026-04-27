@@ -25,6 +25,9 @@ type CheckoutRequestBody = {
   email: string;
   currency?: string;
   items: { productId: string; quantity: number }[];
+  shipping?: { label: string; cost: number };
+  tax?: { label: string; amount: number };
+  discount?: { label: string; amount: number };
 };
 
 type StripeKeyResult =
@@ -89,6 +92,9 @@ export async function POST(request: NextRequest) {
     const email = typeof body?.email === 'string' ? body.email.trim() : '';
     const currency = typeof body?.currency === 'string' && body.currency.trim() ? body.currency.trim().toLowerCase() : DEFAULT_CURRENCY;
     const requestedItems = Array.isArray(body?.items) ? body!.items : [];
+    const shipping = body?.shipping && typeof body.shipping.cost === 'number' ? body.shipping : null;
+    const tax = body?.tax && typeof body.tax.amount === 'number' ? body.tax : null;
+    const discount = body?.discount && typeof body.discount.amount === 'number' ? body.discount : null;
 
     if (!email) {
       return NextResponse.json({ message: 'Email is required' }, { status: 400 });
@@ -170,6 +176,7 @@ export async function POST(request: NextRequest) {
       totalUsd += priceUsd * line.quantity;
     }
 
+
     const lineItems = items.map((item) => ({
       price_data: {
         currency,
@@ -178,6 +185,36 @@ export async function POST(request: NextRequest) {
       },
       quantity: item.quantity,
     }));
+    if (shipping) {
+      lineItems.push({
+        price_data: {
+          currency,
+          product_data: { name: shipping.label || 'Shipping' },
+          unit_amount: Math.round(shipping.cost * 100),
+        },
+        quantity: 1,
+      });
+    }
+    if (tax) {
+      lineItems.push({
+        price_data: {
+          currency,
+          product_data: { name: tax.label || 'Tax' },
+          unit_amount: Math.round(tax.amount * 100),
+        },
+        quantity: 1,
+      });
+    }
+    if (discount) {
+      lineItems.push({
+        price_data: {
+          currency,
+          product_data: { name: discount.label || 'Discount' },
+          unit_amount: -Math.round(Math.abs(discount.amount) * 100),
+        },
+        quantity: 1,
+      });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -202,6 +239,9 @@ export async function POST(request: NextRequest) {
             currency: currency.toUpperCase(),
             items,
             totalUsd: Number(totalUsd),
+            shipping,
+            tax,
+            discount,
             status: 'created',
             createdAt: now,
             updatedAt: now,
@@ -217,6 +257,9 @@ export async function POST(request: NextRequest) {
         currency: currency.toUpperCase(),
         items,
         totalUsd: Number(totalUsd),
+        shipping,
+        tax,
+        discount,
         status: 'created',
         createdAt: now,
         updatedAt: now,

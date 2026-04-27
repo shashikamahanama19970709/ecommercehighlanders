@@ -8,6 +8,8 @@ export interface AppUser {
   role: UserRole;
   // For credentials logins only; hashed with bcrypt
   passwordHash?: string;
+  emailVerified?: boolean;
+  emailVerificationToken?: string;
   createdAt?: string;
   updatedAt?: string;
 }

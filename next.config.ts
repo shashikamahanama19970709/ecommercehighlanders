@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         hostname: 's3.us-west-002.backblazeb2.com',
       },
     ],
+    // Increase cache time for external images
+    minimumCacheTTL: 3600, // 1 hour
+    // Allow SVG images
+    dangerouslyAllowSVG: true,
   },
 };
 

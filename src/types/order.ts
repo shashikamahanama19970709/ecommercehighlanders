@@ -8,6 +8,12 @@ export interface OrderItemSnapshot {
   quantity: number;
 }
 
+export interface DeliveryLocation {
+  lat: number;
+  lng: number;
+  updatedAt: string;
+}
+
 export interface Order {
   _id?: string;
   userId?: string | null;
@@ -17,6 +23,10 @@ export interface Order {
   totalUsd: number;
   status: OrderStatus;
   stripeSessionId?: string;
+  shipping?: { label: string; cost: number };
+  tax?: { label: string; amount: number };
+  discount?: { label: string; amount: number };
+  deliveryLocation?: DeliveryLocation | null;
   createdAt?: string;
   updatedAt?: string;
 }

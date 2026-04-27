@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { connectToDatabase } from '@/lib/mongodb';
+import '@/lib/models'; // Import all models to ensure registration
 import Sport from '@/lib/models/Sport';
 
 const b2Endpoint = process.env.B2_ENDPOINT;

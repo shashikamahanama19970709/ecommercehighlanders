@@ -31,10 +31,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const usersCol = await getCollection<AppUser>("users");
         const user = await usersCol.findOne({ email } as any);
         if (!user || !user.passwordHash) return null;
-
+        if (!user.emailVerified) {
+          // Special error string for unverified
+          throw new Error("EMAIL_NOT_VERIFIED");
+        }
         const isValid = await bcrypt.compare(password, user.passwordHash as string);
         if (!isValid) return null;
-
         return {
           id: user._id?.toString() ?? "",
           name: user.name ?? null,

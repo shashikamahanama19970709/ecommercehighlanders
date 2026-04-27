@@ -27,6 +27,11 @@ interface Order {
   items: OrderItem[];
   createdAt: string;
   updatedAt: string;
+  deliveryLocation?: {
+    lat: number;
+    lng: number;
+    updatedAt: string;
+  };
   // 👇 safer than `any`
   [key: string]: unknown;
 }
@@ -203,6 +208,112 @@ export function CheckoutAdminPage() {
                 ))}
               </tbody>
             </table>
+
+            {/* Delivery Location Tracking */}
+            {viewOrder.deliveryLocation && (
+              <div className="mt-4">
+                <h3 className="font-semibold mb-1">Delivery Location</h3>
+                <div className="text-xs mb-1">
+                  Lat: {viewOrder.deliveryLocation.lat}, Lng: {viewOrder.deliveryLocation.lng}
+                  <br />
+                  Updated: {new Date(viewOrder.deliveryLocation.updatedAt).toLocaleString()}
+                </div>
+                <button
+                  className="px-2 py-1 rounded bg-blue-500 text-white text-xs"
+                  onClick={async () => {
+                    // Simulate location update (for demo/testing)
+                    function randomOffset() {
+                      return (Math.random() - 0.5) * 0.01;
+                    }
+                    const lat = Number(viewOrder.deliveryLocation?.lat ?? 0) + randomOffset();
+                    const lng = Number(viewOrder.deliveryLocation?.lng ?? 0) + randomOffset();
+                    const res = await fetch(`/api/orders/location?orderId=${viewOrder._id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ lat, lng })
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      setViewOrder({ ...viewOrder, deliveryLocation: data.deliveryLocation });
+                    }
+                  }}
+                >
+                  Simulate Location Update
+                </button>
+              </div>
+            )}
+            {!viewOrder.deliveryLocation && (
+              <div className="mt-4">
+                <h3 className="font-semibold mb-1">Delivery Location</h3>
+                <button
+                  className="px-2 py-1 rounded bg-blue-500 text-white text-xs"
+                  onClick={async () => {
+                    // Set initial location (for demo/testing)
+                    const lat = 51.5 + Math.random();
+                    const lng = -0.1 + Math.random();
+                    const res = await fetch(`/api/orders/location?orderId=${viewOrder._id}`, {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ lat, lng })
+                    });
+                    if (res.ok) {
+                      const data = await res.json();
+                      setViewOrder({ ...viewOrder, deliveryLocation: data.deliveryLocation });
+                    }
+                  }}
+                >
+                  Set Initial Location
+                </button>
+              </div>
+            )}
+
+            {/* Manual Delivery Location Update */}
+            {viewOrder.deliveryLocation && (
+              <form
+                className="mt-2 flex gap-2 items-center"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const form = e.currentTarget;
+                  const lat = parseFloat(form.lat.value);
+                  const lng = parseFloat(form.lng.value);
+                  if (isNaN(lat) || isNaN(lng)) return;
+                  const res = await fetch(`/api/orders/location?orderId=${viewOrder._id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ lat, lng })
+                  });
+                  if (res.ok) {
+                    const data = await res.json();
+                    setViewOrder({ ...viewOrder, deliveryLocation: data.deliveryLocation });
+                  }
+                }}
+              >
+                <input
+                  type="number"
+                  step="any"
+                  name="lat"
+                  defaultValue={viewOrder.deliveryLocation.lat}
+                  className="border px-1 py-0.5 rounded text-xs w-28"
+                  placeholder="Latitude"
+                  required
+                />
+                <input
+                  type="number"
+                  step="any"
+                  name="lng"
+                  defaultValue={viewOrder.deliveryLocation.lng}
+                  className="border px-1 py-0.5 rounded text-xs w-28"
+                  placeholder="Longitude"
+                  required
+                />
+                <button
+                  type="submit"
+                  className="px-2 py-1 rounded bg-blue-700 text-white text-xs"
+                >
+                  Update Location
+                </button>
+              </form>
+            )}
 
             <div className="flex gap-2 mt-4">
               <button

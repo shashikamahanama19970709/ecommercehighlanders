@@ -58,10 +58,10 @@ export function HeaderNav() {
           )}
         </Link>
         <Link
-          href="/admin"
-          className={pillClass('/admin', 'border border-border')}
+          href="/login"
+          className={pillClass('/login', 'border border-border')}
         >
-          Admin
+          Customer Login
         </Link>
       </div>
 
@@ -143,11 +143,11 @@ export function HeaderNav() {
               )}
             </Link>
             <Link
-              href="/admin"
+              href="/login"
               onClick={closeMobileMenu}
               className="block rounded-lg px-3 py-2 text-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              Admin
+              Customer Login
             </Link>
           </div>
         </details>
