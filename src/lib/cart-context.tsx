@@ -59,7 +59,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       }
       return {
         ...state,
-        items: [...state.items, { product: { ...action.product, _id: productId }, quantity: 1 }],
+        items: [...state.items, { product: { ...action.product, _id: productId }, quantity: 1, price: action.product.price }],
       };
     }
     case 'REMOVE_FROM_CART':
@@ -147,7 +147,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
           if (!product?._id) return null;
 
-          return { product, quantity } satisfies CartItem;
+          return { product, quantity, price: product.price } satisfies CartItem;
         })
         .filter(Boolean) as CartItem[];
 

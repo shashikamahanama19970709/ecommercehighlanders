@@ -1,8 +1,16 @@
 import type { ReactNode } from "react";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 import { AdminHeader } from "@/components/admin-header";
 import { AdminSidebar } from "@/components/admin-sidebar";
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  const session = await auth();
+
+  if (!session || (session.user as { role?: string })?.role !== "admin") {
+    redirect("/admin/login");
+  }
+
   return (
     <div className="flex h-screen bg-background">
       <AdminSidebar />

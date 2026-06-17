@@ -16,6 +16,9 @@ type CheckoutSessionDoc = {
   currency: string;
   items: OrderItemSnapshot[];
   totalUsd: number;
+  shipping?: { label: string; cost: number } | null;
+  tax?: { label: string; amount: number } | null;
+  discount?: { label: string; amount: number } | null;
   status: 'created' | 'confirmed' | 'order_created' | 'failed';
   createdAt: string;
   updatedAt: string;

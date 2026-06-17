@@ -16,6 +16,9 @@ type CheckoutSessionDoc = {
   currency: string;
   items: OrderItemSnapshot[];
   totalUsd: number;
+  shipping?: { label: string; cost: number } | null;
+  tax?: { label: string; amount: number } | null;
+  discount?: { label: string; amount: number } | null;
   status: 'created' | 'confirmed' | 'order_created' | 'failed';
   orderId?: string;
   createdAt: string;
@@ -136,9 +139,9 @@ export async function GET(request: NextRequest) {
       totalUsd: checkoutDoc.totalUsd,
       status: 'paid',
       stripeSessionId: sessionId,
-      shipping: checkoutDoc.shipping,
-      tax: checkoutDoc.tax,
-      discount: checkoutDoc.discount,
+      shipping: checkoutDoc.shipping ?? undefined,
+      tax: checkoutDoc.tax ?? undefined,
+      discount: checkoutDoc.discount ?? undefined,
       createdAt: now,
       updatedAt: now,
     };

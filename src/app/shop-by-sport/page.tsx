@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Slider from "rc-slider";
@@ -588,9 +588,12 @@ function ShopBySportPageContent() {
                             priceMin ? Number(priceMin) : 0,
                             priceMax ? Number(priceMax) : Math.max(1000, ...products.map(p => Number(p.price) || 0))
                           ]}
-                          onChange={([min, max]) => {
-                            setPriceMin(String(min));
-                            setPriceMax(String(max));
+                          onChange={(value) => {
+                            if (Array.isArray(value)) {
+                              const [min, max] = value;
+                              setPriceMin(String(min));
+                              setPriceMax(String(max));
+                            }
                           }}
                           allowCross={false}
                         />

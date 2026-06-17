@@ -58,7 +58,7 @@ export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white">
       <div className="mx-auto w-full max-w-6xl px-6 py-12">
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand Section */}
           <div className="lg:col-span-1">
             <h3 className="text-lg font-semibold text-white">Sportify-Ecommerce</h3>
@@ -84,32 +84,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider">Quick Links</h4>
-            <ul className="mt-4 space-y-2">
-              <li>
-                <Link href="/about" className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200">
-                  Contact
-                </Link>
-              </li>
-              <li>
-                <Link href="/faqs" className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200">
-                  FAQs
-                </Link>
-              </li>
-              <li>
-                <Link href="/orders-returns" className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200">
-                  Orders & Returns
-                </Link>
-              </li>
-            </ul>
-          </div>
+
 
           {/* Customer Support */}
           <div>
@@ -138,28 +113,45 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Newsletter */}
+          {/* Contact Us */}
           <div>
-            <h4 className="text-sm font-semibold text-white uppercase tracking-wider">Newsletter</h4>
-            <p className="mt-2 text-sm text-gray-400">
-              Subscribe to get updates on new products and offers.
-            </p>
-            <form className="mt-4">
-              <div className="flex">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  className="flex-1 rounded-l-md border-0 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-                <button
-                  type="submit"
-                  className="rounded-r-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors duration-200"
+            <h4 className="text-sm font-semibold text-white uppercase tracking-wider">Contact Us</h4>
+            <ul className="mt-4 space-y-3">
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-blue-400 shrink-0">🏪</span>
+                <span className="text-sm text-gray-400">Sportify Highlanders Store</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-blue-400 shrink-0">📍</span>
+                <span className="text-sm text-gray-400">123 Sports Avenue, Colombo 03, Sri Lanka</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-blue-400 shrink-0">📞</span>
+                <a href="tel:+94112345678" className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200">
+                  +94 11 234 5678
+                </a>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-blue-400 shrink-0">✉️</span>
+                <a href="mailto:info@sportify.lk" className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200">
+                  info@sportify.lk
+                </a>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-0.5 text-blue-400 shrink-0">🗺️</span>
+                <a
+                  href="https://maps.google.com/?q=Colombo,Sri+Lanka"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-400 hover:text-blue-400 transition-colors duration-200"
                 >
-                  Subscribe
-                </button>
-              </div>
-            </form>
+                  View on Google Maps
+                </a>
+              </li>
+            </ul>
           </div>
+
+
         </div>
 
         {/* Social Media Icons */}

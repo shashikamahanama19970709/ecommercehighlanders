@@ -10,6 +10,7 @@ export interface AppUser {
   passwordHash?: string;
   emailVerified?: boolean;
   emailVerificationToken?: string;
+  lastVerificationResend?: number;
   createdAt?: string;
   updatedAt?: string;
 }

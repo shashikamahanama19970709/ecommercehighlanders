@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { isValidObjectId } from 'mongoose';
@@ -49,13 +49,6 @@ function normalizeStringArray(value: unknown): string[] {
     .map((v) => v.trim());
 }
 
-async function resolveSportId(value: unknown): Promise<string | null> {
-  if (typeof value !== 'string' || value.trim() === '') return null;
-  if (isValidObjectId(value)) return value;
-
-  const sport = await Sport.findOne({ name: value.trim() }).select('_id').lean();
-  return sport?._id?.toString?.() ?? null;
-}
 
 // GET /api/shop-by-sport
 export async function GET(request: NextRequest) {

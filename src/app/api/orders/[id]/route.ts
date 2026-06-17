@@ -3,8 +3,8 @@ import { ObjectId } from 'mongodb';
 import { getCollection } from '@/lib/mongodb';
 import type { Order } from '@/types/order';
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = params;
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   if (!id) return NextResponse.json({ message: 'Order ID required' }, { status: 400 });
   try {
     const ordersCol = await getCollection<Order>('orders');

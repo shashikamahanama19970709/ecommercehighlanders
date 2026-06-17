@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useCart } from '@/lib/cart-context';
 import { NoticeBanner, type Notice } from '@/components/notice-banner';
@@ -26,16 +26,12 @@ export function OrderConfirmationClient() {
 
   const [state, setState] = useState<ConfirmState>({ status: 'idle' });
   const [notice, setNotice] = useState<Notice | null>(null);
-
   const sessionId = searchParams.get('session_id') ?? '';
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    if (!sessionId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setState({ status: 'error', message: 'Missing payment session.' });
-      return;
-    }
-
+    if (!sessionId || hasFetchedRef.current) return;
+    hasFetchedRef.current = true;
     let cancelled = false;
     setState({ status: 'loading' });
 
@@ -45,7 +41,6 @@ export function OrderConfirmationClient() {
           `/api/checkout/confirm?session_id=${encodeURIComponent(sessionId)}`,
           { cache: 'no-store' }
         );
-
         const out: ConfirmResponse = await res.json().catch(() => ({}));
 
         if (!res.ok) {
@@ -78,17 +73,14 @@ export function OrderConfirmationClient() {
         }
 
         let order: Order | undefined;
-
         if (out.orderId) {
           try {
             const orderRes = await fetch(`/api/orders/${out.orderId}`, {
               cache: 'no-store',
             });
-            if (orderRes.ok) {
-              order = await orderRes.json();
-            }
+            if (orderRes.ok) order = await orderRes.json();
           } catch {
-            // silently ignore order fetch errors
+            // ignore errors
           }
         }
 
@@ -110,7 +102,7 @@ export function OrderConfirmationClient() {
     return () => {
       cancelled = true;
     };
-  }, [clearCart, sessionId]);
+  }, [sessionId]);
 
   const title =
     state.status === 'confirmed'
@@ -134,7 +126,6 @@ export function OrderConfirmationClient() {
     <div className="flex-1">
       <div className="mx-auto w-full max-w-2xl px-6 py-16 text-center">
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
-
         <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
         <p className="mt-2 text-muted-foreground">{description}</p>
 
@@ -147,7 +138,6 @@ export function OrderConfirmationClient() {
             {state.order?.items?.length ? (
               <div className="mt-6 text-left mx-auto max-w-md border rounded p-4 bg-background">
                 <div className="font-semibold mb-2">Order Details</div>
-
                 <ul className="text-sm space-y-1">
                   {state.order.items.map((item, i) => (
                     <li key={`${item.name}-${i}`}>
@@ -157,48 +147,36 @@ export function OrderConfirmationClient() {
                       </span>
                     </li>
                   ))}
-
                   {state.order.shipping && (
                     <li>
                       Shipping:
                       <span className="float-right">
                         £{state.order.shipping.cost.toFixed(2)}{' '}
-                        <span className="text-xs">
-                          ({state.order.shipping.label})
-                        </span>
+                        <span className="text-xs">({state.order.shipping.label})</span>
                       </span>
                     </li>
                   )}
-
                   {state.order.tax && (
                     <li>
                       Tax:
                       <span className="float-right">
                         £{state.order.tax.amount.toFixed(2)}{' '}
-                        <span className="text-xs">
-                          ({state.order.tax.label})
-                        </span>
+                        <span className="text-xs">({state.order.tax.label})</span>
                       </span>
                     </li>
                   )}
-
                   {state.order.discount && (
                     <li>
                       Discount:
                       <span className="float-right">
                         -£{state.order.discount.amount.toFixed(2)}{' '}
-                        <span className="text-xs">
-                          ({state.order.discount.label})
-                        </span>
+                        <span className="text-xs">({state.order.discount.label})</span>
                       </span>
                     </li>
                   )}
-
                   <li className="font-semibold border-t pt-2 mt-2">
                     Total:
-                    <span className="float-right">
-                      £{state.order.totalUsd.toFixed(2)}
-                    </span>
+                    <span className="float-right">£{state.order.totalUsd.toFixed(2)}</span>
                   </li>
                 </ul>
               </div>
@@ -212,9 +190,7 @@ export function OrderConfirmationClient() {
                   {state.order.deliveryLocation.lng}
                   <br />
                   Updated:{' '}
-                  {new Date(
-                    state.order.deliveryLocation.updatedAt
-                  ).toLocaleString()}
+                  {new Date(state.order.deliveryLocation.updatedAt).toLocaleString()}
                 </div>
               </div>
             )}
