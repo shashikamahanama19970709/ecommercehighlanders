@@ -1,8 +1,11 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { getCollection } from "@/lib/mongodb";
+import { getCollection, connectToDatabase } from "@/lib/mongodb";
 import type { Order } from "@/types/order";
 import type { Product } from "@/types/product";
+import ProductModel from "@/lib/models/Product";
+import SportModel from "@/lib/models/Sport";
+import EquipmentModel from "@/lib/models/Equipment";
 
 // Status badge styles
 function StatusBadge({ status }: { status: string }) {
@@ -66,12 +69,16 @@ export default async function AdminDashboardPage() {
     redirect("/admin/login");
   }
 
-  const ordersCol = await getCollection<Order>("orders");
-  const productsCol = await getCollection<Product>("products");
+  await connectToDatabase();
 
+  const ordersCol = await getCollection<Order>("orders");
   const [orders, products] = await Promise.all([
     ordersCol.find({}).toArray(),
-    productsCol.find({}).toArray(),
+    ProductModel.find({})
+      .populate("sport")
+      .populate("equipment")
+      .sort({ createdAt: -1 })
+      .lean() as unknown as Promise<any[]>,
   ]);
 
   const paidOrders = orders.filter((o) => o.status === "paid");
@@ -262,16 +269,12 @@ export default async function AdminDashboardPage() {
                       <tr key={String(product._id)} className="transition-colors hover:bg-[#f8fafc]">
                         <td className="px-5 py-3">
                           <span className="text-sm font-medium text-[#0f1a2e] line-clamp-1">
-                            {product.name ??
-                              (typeof product.equipment === "string"
-                                ? undefined
-                                : product.equipment?.name) ??
-                              "—"}
+                            {product.name ?? product.equipment?.name ?? (typeof product.equipment === 'string' ? product.equipment : "—")}
                           </span>
                         </td>
                         <td className="px-5 py-3">
                           <span className="text-xs text-[#64748b]">
-                            {(typeof product.sport === "string" ? undefined : product.sport?.name) ?? "—"}
+                            {product.sport?.name ?? (typeof product.sport === 'string' ? product.sport : "—")}
                           </span>
                         </td>
                         <td className="px-5 py-3">

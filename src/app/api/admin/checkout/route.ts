@@ -11,10 +11,29 @@ export async function GET(request: NextRequest) {
       { stripeSessionId: { $regex: search, $options: 'i' } },
     ];
   }
-  const sessions = await col
-    .find(query)
-    .sort({ createdAt: -1 })
-    .limit(100)
-    .toArray();
+  const sessions = await col.aggregate([
+    { $match: query },
+    {
+      $lookup: {
+        from: 'orders',
+        localField: 'stripeSessionId',
+        foreignField: 'stripeSessionId',
+        as: 'associatedOrder'
+      }
+    },
+    {
+      $addFields: {
+        orderStatus: { $arrayElemAt: ['$associatedOrder.status', 0] }
+      }
+    },
+    {
+      $project: {
+        associatedOrder: 0
+      }
+    },
+    { $sort: { createdAt: -1 } },
+    { $limit: 100 }
+  ]).toArray();
+
   return NextResponse.json({ sessions });
 }

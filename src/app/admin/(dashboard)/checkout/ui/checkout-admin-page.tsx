@@ -25,6 +25,7 @@ interface CheckoutSession {
   createdAt: string;
   updatedAt: string;
   orderId?: string;
+  orderStatus?: string;
 }
 
 interface OrderItem {
@@ -55,6 +56,14 @@ function getStatusBadge(status: string) {
       <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 border border-emerald-200">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
         Paid
+      </span>
+    );
+  }
+  if (s === "dispatched") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 border border-blue-200">
+        <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+        Dispatched
       </span>
     );
   }
@@ -215,7 +224,7 @@ export function CheckoutAdminPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(s.status)}
+                      {getStatusBadge(s.orderStatus || s.status)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {getSandboxBadge(s.sandboxEnabled)}
