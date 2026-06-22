@@ -283,13 +283,14 @@ export default function AdminSportsPage() {
 
         {/* Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl border border-slate-100 relative animate-scale-in">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {editingSport ? 'Edit Sport' : 'Add Sport'}
+                <h2 className="text-xl font-black text-[#0f1a2e] tracking-tight">
+                  {editingSport ? 'Edit Sport' : 'Add New Sport'}
                 </h2>
                 <button
+                  type="button"
                   onClick={() => {
                     setIsModalOpen(false);
                     reset({
@@ -300,37 +301,37 @@ export default function AdminSportsPage() {
                     setEditingSport(null);
                     setPreviewUrl('');
                   }}
-                  className="cursor-pointer rounded-md p-1 text-gray-400 hover:text-gray-600"
+                  className="absolute top-5 right-5 flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 hover:text-black hover:bg-slate-100 transition-all"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <Controller
                   name="name"
                   control={control}
                   render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Sport Name</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sport Name</label>
                       <input
                         {...field}
                         type="text"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                        placeholder="Enter sport name"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
+                        placeholder="e.g., Football, Tennis"
                       />
-                      {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+                      {errors.name && <p className="text-xs text-rose-600 font-bold">{errors.name.message}</p>}
                     </div>
                   )}
                 />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Sport Image</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sport Image</label>
                   <div className="space-y-3">
                     {/* Current Image Preview */}
                     {previewUrl && (
-                      <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden border">
+                      <div className="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-slate-200/60">
                           <Image
                             src={previewUrl}
                             alt="Sport image preview"
@@ -339,19 +340,19 @@ export default function AdminSportsPage() {
                             className="object-cover"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watch('name') || 'Sport')}&background=6366f1&color=ffffff&size=48&font-size=0.6`;
+                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watch('name') || 'Sport')}&background=0f1a2e&color=ffffff&size=48&font-size=0.6`;
                             }}
                           />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Current image</p>
-                          <p className="text-xs text-gray-500">Upload a new one to replace</p>
+                          <p className="text-xs font-bold text-[#0f1a2e]">Current image</p>
+                          <p className="text-[10px] text-slate-500">Upload a new image to replace</p>
                         </div>
                       </div>
                     )}
 
-                    {/* File Upload */}
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                    {/* File Upload Container */}
+                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-[#0f1a2e] transition-colors bg-slate-50/50">
                       {previewUrl && !uploadingImage ? (
                         <>
                           <input
@@ -369,7 +370,7 @@ export default function AdminSportsPage() {
                             htmlFor="sport-image-upload-replace"
                             className="cursor-pointer flex items-center justify-center space-x-4"
                           >
-                            <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center overflow-hidden border">
+                            <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-200/60">
                               <Image
                                 src={previewUrl}
                                 alt="Uploaded sport image"
@@ -378,13 +379,13 @@ export default function AdminSportsPage() {
                                 className="object-cover"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
-                                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watch('name') || 'Sport')}&background=6366f1&color=ffffff&size=64&font-size=0.6`;
+                                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watch('name') || 'Sport')}&background=0f1a2e&color=ffffff&size=64&font-size=0.6`;
                                 }}
                               />
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">Image uploaded successfully</p>
-                              <p className="text-xs text-gray-500">Click to upload a different image</p>
+                            <div className="flex-1 text-left">
+                              <p className="text-xs font-bold text-emerald-700">Image Uploaded</p>
+                              <p className="text-[10px] text-slate-500">Click to upload a different image</p>
                             </div>
                           </label>
                         </>
@@ -403,20 +404,20 @@ export default function AdminSportsPage() {
                           />
                           <label
                             htmlFor="sport-image-upload"
-                            className="cursor-pointer flex flex-col items-center space-y-2"
+                            className="cursor-pointer flex flex-col items-center space-y-2 py-2"
                           >
-                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
+                              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                               </svg>
                             </div>
                             <div className="text-center">
                               {uploadingImage ? (
-                                <p className="text-sm text-blue-600">Uploading image...</p>
+                                <p className="text-xs font-bold text-[#c8a84b] animate-pulse">Uploading...</p>
                               ) : (
                                 <>
-                                  <p className="text-sm font-medium text-gray-900">Click to upload sport image</p>
-                                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                                  <p className="text-xs font-bold text-slate-700">Upload sport image</p>
+                                  <p className="text-[10px] text-slate-400">PNG, JPG up to 10MB</p>
                                 </>
                               )}
                             </div>
@@ -425,7 +426,6 @@ export default function AdminSportsPage() {
                       )}
                     </div>
 
-                    {/* Hidden URL field for form validation */}
                     <Controller
                       name="imageKey"
                       control={control}
@@ -434,35 +434,35 @@ export default function AdminSportsPage() {
                       )}
                     />
                   </div>
-                  {errors.imageKey && <p className="text-sm text-red-600">{errors.imageKey.message}</p>}
+                  {errors.imageKey && <p className="text-xs text-rose-600 font-bold">{errors.imageKey.message}</p>}
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Equipment Types</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Equipment Types</label>
                     <button
                       type="button"
                       onClick={addEquipmentType}
-                      className="cursor-pointer text-sm text-blue-600 hover:text-blue-800"
+                      className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-800"
                     >
                       + Add Type
                     </button>
                   </div>
 
-                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                  <div className="space-y-2.5 max-h-40 overflow-y-auto pr-1">
                     {(equipmentTypes || [''])?.map((type, index) => (
                       <div key={index} className="flex gap-2">
                         <input
                           type="text"
                           value={type}
                           onChange={(e) => updateEquipmentType(index, e.target.value)}
-                          className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                          className="flex-1 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold outline-none transition-all focus:border-[#0f1a2e]"
                           placeholder="e.g., Ball, Bat, Shoes"
                         />
                         <button
                           type="button"
                           onClick={() => removeEquipmentType(index)}
-                          className="cursor-pointer rounded-md p-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+                          className="cursor-pointer rounded-xl p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -476,7 +476,7 @@ export default function AdminSportsPage() {
                         const message = (err as { message?: string } | undefined)?.message;
                         if (!message) return null;
                         return (
-                          <p key={idx} className="text-sm text-red-600">
+                          <p key={idx} className="text-xs text-rose-600 font-bold">
                             {message}
                           </p>
                         );
@@ -484,12 +484,12 @@ export default function AdminSportsPage() {
                     </div>
                   ) : (
                     errors.equipmentTypes && (
-                      <p className="text-sm text-red-600">{(errors.equipmentTypes as unknown as { message?: string })?.message}</p>
+                      <p className="text-xs text-rose-600 font-bold">{(errors.equipmentTypes as unknown as { message?: string })?.message}</p>
                     )
                   )}
                 </div>
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -502,16 +502,16 @@ export default function AdminSportsPage() {
                       setEditingSport(null);
                       setPreviewUrl('');
                     }}
-                    className="cursor-pointer flex-1 rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+                    className="flex-1 rounded-full border border-slate-200 hover:bg-slate-50 py-2.5 text-xs font-bold text-slate-700 transition-colors uppercase tracking-wider"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="cursor-pointer flex-1 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="flex-1 rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg disabled:opacity-50 transition-all uppercase tracking-wider"
                   >
-                    {isSubmitting ? 'Saving...' : 'Save'}
+                    {isSubmitting ? 'Saving...' : 'Save Sport'}
                   </button>
                 </div>
               </form>

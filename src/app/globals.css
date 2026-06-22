@@ -1,39 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 @import "tailwindcss";
 
+/* =====================================================
+   HIGHLANDERS SPORTS & FITNESS — Design System
+   Brand: Navy + Silver + Gold
+   ===================================================== */
+
 :root {
+  /* Core palette */
   --background: #ffffff;
-  --foreground: #171717;
-  --primary: #3b82f6;
+  --foreground: #0f1a2e;
+
+  /* Brand colors */
+  --brand-navy: #0f1a2e;
+  --brand-navy-light: #1e3a5f;
+  --brand-silver: #c8d4e4;
+  --brand-silver-dark: #8898b0;
+  --brand-gold: #c8a84b;
+  --brand-gold-dark: #9a6e08;
+
+  /* UI tokens */
+  --primary: #1e3a5f;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f8fafc;
+  --secondary: #f0f4f8;
+  --secondary-foreground: #0f1a2e;
+  --muted: #f0f4f8;
   --muted-foreground: #64748b;
-  --accent: #e2e8f0;
-  --accent-foreground: #0f172a;
-  --destructive: #ef4444;
+  --accent: #e8edf5;
+  --accent-foreground: #0f1a2e;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
+  --border: #dde4ee;
   --input: #ffffff;
-  --ring: #3b82f6;
+  --ring: #1e3a5f;
+
+  /* Radius system */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadow system */
+  --shadow-sm: 0 1px 3px 0 rgba(15,26,46,0.08), 0 1px 2px -1px rgba(15,26,46,0.06);
+  --shadow-md: 0 4px 16px -2px rgba(15,26,46,0.10), 0 2px 6px -2px rgba(15,26,46,0.08);
+  --shadow-lg: 0 12px 40px -8px rgba(15,26,46,0.14), 0 4px 16px -4px rgba(15,26,46,0.10);
+  --shadow-gold: 0 4px 20px -4px rgba(200,168,75,0.30);
 }
 
 .dark {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-  --primary: #60a5fa;
-  --primary-foreground: #0a0a0a;
-  --secondary: #1e293b;
-  --secondary-foreground: #f8fafc;
-  --muted: #1e293b;
-  --muted-foreground: #94a3b8;
-  --accent: #334155;
-  --accent-foreground: #f8fafc;
-  --destructive: #dc2626;
+  --background: #080e1a;
+  --foreground: #e8edf5;
+
+  --primary: #c8d4e4;
+  --primary-foreground: #0f1a2e;
+  --secondary: #121e30;
+  --secondary-foreground: #e8edf5;
+  --muted: #121e30;
+  --muted-foreground: #8898b0;
+  --accent: #1e3a5f;
+  --accent-foreground: #e8edf5;
+  --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #334155;
-  --input: #0a0a0a;
-  --ring: #60a5fa;
+  --border: #1e3a5f;
+  --input: #121e30;
+  --ring: #c8a84b;
 }
 
 @theme inline {
@@ -52,70 +83,188 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Inter', 'Outfit', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+}
+
+/* =====================================================
+   BASE STYLES
+   ===================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', 'Outfit', system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
 }
 
-/* Hide scrollbar for slider */
+/* =====================================================
+   SCROLLBAR
+   ===================================================== */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* Internet Explorer 10+ */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Safari and Chrome */
+  display: none;
 }
 
-/* Custom cursor for draggable slider */
-.cursor-grab {
-  cursor: grab;
+/* Premium thin scrollbar */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--brand-silver-dark) transparent;
+}
+.scrollbar-thin::-webkit-scrollbar { width: 4px; }
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: var(--brand-silver-dark);
+  border-radius: 99px;
 }
 
-.cursor-grabbing {
-  cursor: grabbing;
-}
+/* =====================================================
+   CURSOR
+   ===================================================== */
+.cursor-grab { cursor: grab; }
+.cursor-grabbing { cursor: grabbing; }
 
+/* =====================================================
+   ANIMATIONS
+   ===================================================== */
 @keyframes float-y {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
 }
 
 @keyframes pan-diagonal {
-  0% {
-    object-position: 0% 0%;
-  }
-  50% {
-    object-position: 100% 100%;
-  }
-  100% {
-    object-position: 0% 0%;
-  }
+  0% { object-position: 0% 0%; }
+  50% { object-position: 100% 100%; }
+  100% { object-position: 0% 0%; }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pulse-gold {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,168,75,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(200,168,75,0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-float-y {
-    animation: none !important;
-  }
-
-  .animate-pan-diagonal {
+  .animate-float-y,
+  .animate-pan-diagonal,
+  .animate-fade-up,
+  .animate-scale-in {
     animation: none !important;
   }
 }
 
-.animate-float-y {
-  animation: float-y 4s ease-in-out infinite;
+.animate-float-y { animation: float-y 4s ease-in-out infinite; }
+.animate-pan-diagonal { animation: pan-diagonal 10s ease-in-out infinite; }
+.animate-fade-up { animation: fade-up 0.4s ease-out both; }
+.animate-scale-in { animation: scale-in 0.3s ease-out both; }
+.animate-pulse-gold { animation: pulse-gold 2s ease-in-out infinite; }
+
+/* Gold shimmer button effect */
+.btn-gold-shimmer {
+  background: linear-gradient(
+    90deg,
+    #c8a84b 0%,
+    #e8c96a 40%,
+    #c8a84b 60%,
+    #9a6e08 100%
+  );
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
 }
 
-.animate-pan-diagonal {
-  animation: pan-diagonal 10s ease-in-out infinite;
+/* =====================================================
+   GLASSMORPHISM
+   ===================================================== */
+.glass {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.12);
+}
+
+.glass-dark {
+  background: rgba(15,26,46,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(200,212,228,0.1);
+}
+
+/* =====================================================
+   BRAND UTILITIES
+   ===================================================== */
+.text-brand-gold { color: var(--brand-gold); }
+.text-brand-silver { color: var(--brand-silver); }
+.text-brand-navy { color: var(--brand-navy); }
+.bg-brand-navy { background-color: var(--brand-navy); }
+.bg-brand-gold { background-color: var(--brand-gold); }
+.border-brand-gold { border-color: var(--brand-gold); }
+
+.gradient-gold-text {
+  background: linear-gradient(135deg, #d4a84b 0%, #f0c870 50%, #b8860b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-silver-text {
+  background: linear-gradient(135deg, #e8edf5 0%, #c8d4e4 50%, #8898b0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Gold accent line */
+.gold-accent-top {
+  border-top: 2px solid transparent;
+  background: linear-gradient(var(--background), var(--background)) padding-box,
+              linear-gradient(90deg, #c8a84b, #f0c870, #c8a84b) border-box;
+}
+
+/* =====================================================
+   FORM ELEMENTS
+   ===================================================== */
+.input-premium {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: var(--input);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.input-premium:focus {
+  border-color: var(--brand-navy-light);
+  box-shadow: 0 0 0 3px rgba(30,58,95,0.12);
+}
+
+.input-premium::placeholder {
+  color: var(--muted-foreground);
 }

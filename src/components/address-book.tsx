@@ -31,13 +31,10 @@ export function AddressBook({ onSelect, selectedId }: AddressBookProps) {
     }
   }
 
-    function startEdit(address?: Address) {
--    setEditing(address ?? null);
-+    // If no address is provided (Add New), initialize editing with an empty object
-+    // so the form UI appears. This placeholder will be treated as a new address.
-+    setEditing(address ?? ({} as Address));
-     setForm(address ? { ...address } : {});
-   }
+  function startEdit(address?: Address) {
+    setEditing(address ?? ({} as Address));
+    setForm(address ? { ...address } : {});
+  }
 
 
 

@@ -1,7 +1,8 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
+import { X, Plus, Upload } from 'lucide-react';
 import type { Product, Sport } from '@/types/product';
 import type { ShopBySportModule } from '@/types/shop-by-sport';
 import { NoticeBanner, type Notice } from '@/components/notice-banner';
@@ -463,35 +464,40 @@ export default function AdminShopBySportPage() {
 
         {/* Entry modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="w-full max-w-3xl overflow-hidden rounded-2xl border bg-background shadow-lg">
-              <div className="flex items-center justify-between border-b px-5 py-4">
-                <div>
-                  <h2 className="text-sm font-semibold text-foreground">
-                    {editingIndex === null ? 'Create sport card' : 'Edit sport card'}
-                  </h2>
-                  <p className="text-[11px] text-muted-foreground">Pick a sport, upload a hero image, and select 1–4 products.</p>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="w-full max-w-3xl rounded-[2rem] bg-white p-8 shadow-2xl border border-slate-100 relative animate-scale-in max-h-[90vh] overflow-y-auto">
+              {/* Close Icon Button */}
+              <button
+                type="button"
+                onClick={closeModal}
+                className="absolute top-6 right-6 flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 hover:text-black hover:bg-slate-100 transition-all shadow-sm z-10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="mb-6 flex items-center gap-4 border-b border-slate-100 pb-5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c8a84b]/10 text-[#c8a84b]">
+                  <Plus className="h-6 w-6" />
                 </div>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-accent"
-                >
-                  Close
-                </button>
+                <div>
+                  <h2 className="text-xl font-black text-[#0f1a2e] tracking-tight">
+                    {editingIndex === null ? 'Create Sport Card' : 'Edit Sport Card'}
+                  </h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Pick a sport, upload a hero image, and select 1–4 products.</p>
+                </div>
               </div>
 
-              <div className="max-h-[80vh] overflow-auto p-5">
+              <div>
                 <div className="space-y-5">
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-medium text-muted-foreground">Sport</p>
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sport</label>
                     <select
                       value={draft.sportId}
                       onChange={(e) => {
                         const nextSportId = e.target.value;
                         setDraft((prev) => ({ ...prev, sportId: nextSportId, productIds: [] }));
                       }}
-                      className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs"
+                      className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
                     >
                       <option value="">Select sport</option>
                       {sports.map((s) => (
@@ -502,16 +508,16 @@ export default function AdminShopBySportPage() {
                     </select>
                   </div>
 
-                  <div className="grid gap-5 md:grid-cols-[240px_1fr]">
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-medium text-muted-foreground">Hero image</p>
-                      <div className="rounded-xl border bg-muted p-3">
+                  <div className="grid gap-6 md:grid-cols-[240px_1fr]">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Hero image</label>
+                      <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 shadow-sm">
                         {draft.heroImageUrl ? (
-                          <div className="relative h-28 w-full overflow-hidden rounded-lg bg-background">
+                          <div className="relative h-28 w-full overflow-hidden rounded-xl bg-background border border-slate-200/50">
                             <Image src={draft.heroImageUrl} alt="Hero" fill className="object-cover" />
                           </div>
                         ) : (
-                          <div className="flex h-28 items-center justify-center rounded-lg border border-dashed bg-background text-[11px] text-muted-foreground">
+                          <div className="flex h-28 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-background text-[11px] font-bold text-slate-400">
                             No image
                           </div>
                         )}
@@ -530,10 +536,10 @@ export default function AdminShopBySportPage() {
                           />
                           <label
                             htmlFor="hero-upload-modal"
-                            className={`inline-flex w-full cursor-pointer items-center justify-center rounded-md border px-3 py-2 text-xs ${
+                            className={`cursor-pointer inline-flex w-full items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition-colors uppercase tracking-wider shadow-sm ${
                               !draft.sportId || isUploadingHero
-                                ? 'cursor-not-allowed bg-muted text-muted-foreground'
-                                : 'bg-background hover:bg-accent'
+                                ? 'cursor-not-allowed bg-slate-100 text-slate-400'
+                                : 'bg-white hover:bg-slate-50'
                             }`}
                           >
                             {isUploadingHero ? 'Uploading…' : 'Upload hero image'}
@@ -543,32 +549,32 @@ export default function AdminShopBySportPage() {
                     </div>
 
                     <div className="space-y-2">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2 mb-3">
                         <div>
-                          <p className="text-[11px] font-medium text-muted-foreground">
+                          <p className="text-xs font-bold uppercase tracking-wider text-[#0f1a2e]">
                             Bottom card products ({draft.productIds.length}/{MAX_PRODUCTS})
                           </p>
-                          <p className="text-[11px] text-muted-foreground">Select {MIN_PRODUCTS}–{MAX_PRODUCTS}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">Select {MIN_PRODUCTS}–{MAX_PRODUCTS}</p>
                         </div>
                         <input
                           value={productQuery}
                           onChange={(e) => setProductQuery(e.target.value)}
                           placeholder="Search products…"
-                          className="w-56 rounded-md border border-border bg-background px-3 py-2 text-xs"
+                          className="w-56 rounded-xl border border-slate-200 bg-white px-3.5 py-1.5 text-xs font-semibold outline-none focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
                           disabled={!draft.sportId}
                         />
                       </div>
 
                       {!draft.sportId ? (
-                        <div className="rounded-lg border border-dashed bg-muted p-6 text-center text-xs text-muted-foreground">
+                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs font-bold text-slate-400">
                           Select a sport to choose products.
                         </div>
                       ) : (
-                        <div className="max-h-56 overflow-auto rounded-xl border bg-background">
+                        <div className="max-h-56 overflow-auto rounded-2xl border border-slate-100 bg-white shadow-sm pr-1">
                           {draftSportProducts.length === 0 ? (
-                            <div className="p-4 text-center text-xs text-muted-foreground">No products found for this sport.</div>
+                            <div className="p-4 text-center text-xs font-bold text-slate-400">No products found for this sport.</div>
                           ) : (
-                            <div className="divide-y">
+                            <div className="divide-y divide-slate-50">
                               {draftSportProducts.map((p) => {
                                 const pid = p._id ?? '';
                                 const checked = pid ? draft.productIds.includes(pid) : false;
@@ -577,13 +583,13 @@ export default function AdminShopBySportPage() {
                                 return (
                                   <label
                                     key={p._id}
-                                    className={`flex cursor-pointer items-center justify-between gap-3 px-4 py-2 text-xs hover:bg-accent ${
-                                      disabled ? 'opacity-60' : ''
+                                    className={`flex cursor-pointer items-center justify-between gap-3 px-4 py-2.5 text-xs hover:bg-slate-50/50 transition-colors border-b last:border-b-0 border-slate-50 ${
+                                      disabled ? 'opacity-50' : ''
                                     }`}
                                   >
-                                    <div className="min-w-0">
-                                      <p className="truncate font-medium text-foreground">{getProductLabel(p)}</p>
-                                      <p className="truncate text-[11px] text-muted-foreground">Stock: {p.stock ?? 0}</p>
+                                    <div className="min-w-0 text-left">
+                                      <p className="truncate font-bold text-[#0f1a2e]">{getProductLabel(p)}</p>
+                                      <p className="truncate text-[10px] text-slate-400 mt-0.5">Stock: {p.stock ?? 0}</p>
                                     </div>
                                     <input
                                       type="checkbox"
@@ -600,6 +606,7 @@ export default function AdminShopBySportPage() {
                                           return { ...prev, productIds: [...prev.productIds, pid] };
                                         });
                                       }}
+                                      className="rounded border-slate-300 text-[#0f1a2e] focus:ring-[#0f1a2e] h-4 w-4"
                                     />
                                   </label>
                                 );
@@ -611,18 +618,18 @@ export default function AdminShopBySportPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-end gap-2 border-t pt-4">
+                  <div className="flex gap-3 pt-6 border-t border-slate-100 mt-6">
                     <button
                       type="button"
                       onClick={closeModal}
-                      className="cursor-pointer rounded-full border border-border bg-background px-4 py-2 text-xs hover:bg-accent"
+                      className="flex-1 rounded-full border border-slate-200 hover:bg-slate-50 py-3 text-xs font-bold text-slate-700 transition-all uppercase tracking-wider"
                     >
                       Cancel
                     </button>
                     <button
                       type="button"
                       onClick={saveDraftToList}
-                      className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90"
+                      className="flex-1 rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] py-3 text-xs font-bold text-white shadow-md hover:shadow-lg disabled:opacity-50 transition-all uppercase tracking-wider"
                     >
                       Save
                     </button>

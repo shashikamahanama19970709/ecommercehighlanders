@@ -7,6 +7,7 @@ import { z } from 'zod';
 import Image from 'next/image';
 import type { Brand, Sport } from '@/types/product';
 import { NoticeBanner, type Notice } from '@/components/notice-banner';
+import { X } from 'lucide-react';
 
 const brandSchema = z.object({
   name: z.string().min(1, 'Brand name is required'),
@@ -23,7 +24,7 @@ export default function AdminBrandsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBrand, setEditingBrand] = useState<Brand | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false); const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
   const { control, handleSubmit, reset, setValue, clearErrors, watch, formState: { errors } } = useForm<BrandFormData>({
     resolver: zodResolver(brandSchema),
@@ -35,11 +36,27 @@ export default function AdminBrandsPage() {
     },
   });
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   // Fetch brands and sports
   useEffect(() => {
     fetchBrands();
     fetchSports();
   }, []);
+
+  // Adjust pagination if the items count changes (e.g., after deletion)
+  useEffect(() => {
+    const totalPages = Math.ceil(brands.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [brands.length, currentPage]);
+
+  const totalPages = Math.ceil(brands.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedBrands = brands.slice(startIndex, startIndex + itemsPerPage);
 
   const fetchBrands = async () => {
     const response = await fetch('/api/brands');
@@ -201,23 +218,23 @@ export default function AdminBrandsPage() {
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
         {/* Brands Table */}
-        <div className="rounded-xl bg-white/80 backdrop-blur-sm p-6 shadow-lg">
+        <div className="rounded-2xl bg-white border border-slate-100 p-6 shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-sm divide-y divide-slate-100">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="pb-4 text-left font-medium text-gray-900">Logo</th>
-                  <th className="pb-4 text-left font-medium text-gray-900">Name</th>
-                  <th className="pb-4 text-left font-medium text-gray-900">Sports</th>
-                  <th className="pb-4 text-left font-medium text-gray-900">Status</th>
-                  <th className="pb-4 text-left font-medium text-gray-900">Actions</th>
+                <tr>
+                  <th scope="col" className="pb-4 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Logo</th>
+                  <th scope="col" className="pb-4 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Name</th>
+                  <th scope="col" className="pb-4 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Sports</th>
+                  <th scope="col" className="pb-4 text-left font-bold text-slate-500 uppercase tracking-wider text-xs">Status</th>
+                  <th scope="col" className="pb-4 text-right font-bold text-slate-500 uppercase tracking-wider text-xs">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {brands.map((brand) => (
-                  <tr key={brand._id} className="hover:bg-gray-50">
-                    <td className="py-4">
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
+              <tbody className="divide-y divide-slate-100 bg-white">
+                {paginatedBrands.map((brand) => (
+                  <tr key={brand._id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-4 whitespace-nowrap">
+                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200/50">
                         {brand.logoUrl ? (
                           <Image
                             src={brand.logoUrl}
@@ -226,52 +243,51 @@ export default function AdminBrandsPage() {
                             height={40}
                             className="object-cover"
                             onError={(e) => {
-                              // Fallback to avatar placeholder
                               const target = e.target as HTMLImageElement;
-                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.name)}&background=6366f1&color=ffffff&size=40&font-size=0.6`;
+                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.name)}&background=0f1a2e&color=ffffff&size=40&font-size=0.6`;
                             }}
                           />
                         ) : (
-                          <div className="text-xs text-gray-500">No logo</div>
+                          <div className="text-xs text-slate-400 font-bold">No logo</div>
                         )}
                       </div>
                     </td>
-                    <td className="py-4 font-medium text-gray-900">{brand.name}</td>
+                    <td className="py-4 whitespace-nowrap font-bold text-slate-800">{brand.name}</td>
                     <td className="py-4">
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-1.5 max-w-md">
                         {brand.associatedSports.map((sport) => (
                           <span
                             key={sport._id}
-                            className="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+                            className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700 border border-slate-200/40"
                           >
                             {sport.name}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="py-4">
+                    <td className="py-4 whitespace-nowrap">
                       <button
                         onClick={() => togglePublished(brand)}
-                        className={`cursor-pointer inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          brand.isPublished
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
+                        className={`cursor-pointer inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold border ${brand.isPublished
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                            : 'bg-slate-50 text-slate-600 border-slate-200'
+                          }`}
                       >
+                        <span className={`h-1.5 w-1.5 rounded-full ${brand.isPublished ? 'bg-emerald-500' : 'bg-slate-400'}`} />
                         {brand.isPublished ? 'Published' : 'Unpublished'}
                       </button>
                     </td>
-                    <td className="py-4">
-                      <div className="flex gap-2">
+                    <td className="py-4 whitespace-nowrap text-right">
+                      <div className="flex gap-2 justify-end">
                         <button
                           onClick={() => handleEdit(brand)}
-                          className="cursor-pointer rounded-md bg-blue-600 px-3 py-1 text-xs font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="cursor-pointer rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] px-4 py-1.5 text-xs font-bold text-white shadow-sm transition-all"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(brand._id)}
-                          className="cursor-pointer rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          className="cursor-pointer rounded-full bg-rose-600 hover:bg-rose-700 px-4 py-1.5 text-xs font-bold text-white shadow-sm transition-all"
                         >
                           Delete
                         </button>
@@ -282,41 +298,96 @@ export default function AdminBrandsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-4">
+              <p className="text-xs text-slate-500 font-semibold">
+                Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to{" "}
+                <span className="font-bold text-slate-800">
+                  {Math.min(startIndex + itemsPerPage, brands.length)}
+                </span>{" "}
+                of <span className="font-bold text-slate-800">{brands.length}</span> brands
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="inline-flex h-8 px-3 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                >
+                  Previous
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${currentPage === page
+                        ? "bg-[#0f1a2e] text-white shadow"
+                        : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="inline-flex h-8 px-3 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modal */}
         {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
-              <h2 className="mb-6 text-xl font-semibold text-gray-900">
-                {editingBrand ? 'Edit Brand' : 'Add Brand'}
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl border border-slate-100 relative animate-scale-in">
+              {/* Close icon */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  reset();
+                  setPreviewUrl(null);
+                  setEditingBrand(null);
+                }}
+                className="absolute top-5 right-5 flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 hover:text-black hover:bg-slate-100 transition-all"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <h2 className="mb-6 text-xl font-black text-[#0f1a2e] tracking-tight">
+                {editingBrand ? 'Edit Brand' : 'Add New Brand'}
               </h2>
 
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
                 <Controller
                   name="name"
                   control={control}
                   render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Brand Name</label>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Brand Name</label>
                       <input
                         {...field}
                         type="text"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                        placeholder="Enter brand name"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
+                        placeholder="e.g., Nike, Adidas"
                       />
-                      {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
+                      {errors.name && <p className="text-xs text-rose-600 font-bold">{errors.name.message}</p>}
                     </div>
                   )}
                 />
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Logo</label>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Logo</label>
                   <div className="space-y-3">
                     {/* Current Logo Preview */}
                     {previewUrl && (
-                      <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden border">
+                      <div className="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-slate-200/60">
                           <Image
                             src={previewUrl}
                             alt="Logo preview"
@@ -325,19 +396,19 @@ export default function AdminBrandsPage() {
                             className="object-cover"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watch('name') || 'Brand')}&background=6366f1&color=ffffff&size=48&font-size=0.6`;
+                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watch('name') || 'Brand')}&background=0f1a2e&color=ffffff&size=48&font-size=0.6`;
                             }}
                           />
                         </div>
                         <div>
-                          <p className="text-sm font-medium text-gray-900">Current logo</p>
-                          <p className="text-xs text-gray-500">Upload a new one to replace</p>
+                          <p className="text-xs font-bold text-[#0f1a2e]">Current logo</p>
+                          <p className="text-[10px] text-slate-500">Upload a new image to replace</p>
                         </div>
                       </div>
                     )}
 
-                    {/* File Upload */}
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
+                    {/* File Upload Container */}
+                    <div className="border-2 border-dashed border-slate-200 rounded-xl p-4 hover:border-[#0f1a2e] transition-colors bg-slate-50/50">
                       {previewUrl && !uploadingImage ? (
                         <>
                           <input
@@ -355,7 +426,7 @@ export default function AdminBrandsPage() {
                             htmlFor="logo-upload-replace"
                             className="cursor-pointer flex items-center justify-center space-x-4"
                           >
-                            <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center overflow-hidden border">
+                            <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-200/60">
                               <Image
                                 src={previewUrl}
                                 alt="Uploaded logo"
@@ -364,13 +435,13 @@ export default function AdminBrandsPage() {
                                 className="object-cover"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
-                                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watch('name') || 'Brand')}&background=6366f1&color=ffffff&size=64&font-size=0.6`;
+                                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(watch('name') || 'Brand')}&background=0f1a2e&color=ffffff&size=64&font-size=0.6`;
                                 }}
                               />
                             </div>
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-gray-900">Logo uploaded successfully</p>
-                              <p className="text-xs text-gray-500">Click to upload a different image</p>
+                            <div className="flex-1 text-left">
+                              <p className="text-xs font-bold text-emerald-700">Logo Uploaded</p>
+                              <p className="text-[10px] text-slate-500">Click to upload a different image</p>
                             </div>
                           </label>
                         </>
@@ -389,20 +460,20 @@ export default function AdminBrandsPage() {
                           />
                           <label
                             htmlFor="logo-upload"
-                            className="cursor-pointer flex flex-col items-center space-y-2"
+                            className="cursor-pointer flex flex-col items-center space-y-2 py-2"
                           >
-                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                              <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
+                              <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                               </svg>
                             </div>
                             <div className="text-center">
                               {uploadingImage ? (
-                                <p className="text-sm text-blue-600">Uploading image...</p>
+                                <p className="text-xs font-bold text-[#c8a84b] animate-pulse">Uploading...</p>
                               ) : (
                                 <>
-                                  <p className="text-sm font-medium text-gray-900">Click to upload logo</p>
-                                  <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                                  <p className="text-xs font-bold text-slate-700">Upload logo image</p>
+                                  <p className="text-[10px] text-slate-400">PNG, JPG up to 10MB</p>
                                 </>
                               )}
                             </div>
@@ -411,7 +482,6 @@ export default function AdminBrandsPage() {
                       )}
                     </div>
 
-                    {/* Hidden logoKey field for form validation */}
                     <Controller
                       name="logoKey"
                       control={control}
@@ -420,18 +490,18 @@ export default function AdminBrandsPage() {
                       )}
                     />
                   </div>
-                  {errors.logoKey && <p className="text-sm text-red-600">{errors.logoKey.message}</p>}
+                  {errors.logoKey && <p className="text-xs text-rose-600 font-bold">{errors.logoKey.message}</p>}
                 </div>
 
                 <Controller
                   name="associatedSports"
                   control={control}
                   render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Associated Sports</label>
-                      <div className="max-h-32 overflow-y-auto border border-gray-300 rounded-md p-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Associated Sports</label>
+                      <div className="max-h-36 overflow-y-auto border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-1">
                         {sports.map((sport) => (
-                          <label key={sport._id} className="flex items-center space-x-2">
+                          <label key={sport._id} className="flex items-center space-x-2.5 cursor-pointer">
                             <input
                               type="checkbox"
                               value={sport._id}
@@ -444,13 +514,13 @@ export default function AdminBrandsPage() {
                                   field.onChange(field.value.filter((id) => id !== value));
                                 }
                               }}
-                              className="rounded border-gray-300"
+                              className="rounded border-slate-300 text-[#0f1a2e] focus:ring-[#0f1a2e] h-4 w-4"
                             />
-                            <span className="text-sm">{sport.name}</span>
+                            <span className="text-xs font-semibold text-slate-700">{sport.name}</span>
                           </label>
                         ))}
                       </div>
-                      {errors.associatedSports && <p className="text-sm text-red-600">{errors.associatedSports.message}</p>}
+                      {errors.associatedSports && <p className="text-xs text-rose-600 font-bold">{errors.associatedSports.message}</p>}
                     </div>
                   )}
                 />
@@ -459,19 +529,19 @@ export default function AdminBrandsPage() {
                   name="isPublished"
                   control={control}
                   render={({ field }) => (
-                    <div className="flex items-center space-x-2">
+                    <label className="flex items-center space-x-2.5 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={field.value}
                         onChange={field.onChange}
-                        className="rounded border-gray-300"
+                        className="rounded border-slate-300 text-[#0f1a2e] focus:ring-[#0f1a2e] h-4 w-4"
                       />
-                      <label className="text-sm font-medium">Show on Landing Page</label>
-                    </div>
+                      <span className="text-xs font-bold text-slate-700">Publish on landing page</span>
+                    </label>
                   )}
                 />
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex gap-3 pt-3">
                   <button
                     type="button"
                     onClick={() => {
@@ -480,16 +550,16 @@ export default function AdminBrandsPage() {
                       setPreviewUrl(null);
                       setEditingBrand(null);
                     }}
-                    className="cursor-pointer flex-1 rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+                    className="flex-1 rounded-full border border-slate-200 hover:bg-slate-50 py-2.5 text-xs font-bold text-slate-700 transition-colors uppercase tracking-wider"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="cursor-pointer flex-1 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="flex-1 rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg disabled:opacity-50 transition-all uppercase tracking-wider"
                   >
-                    {isSubmitting ? 'Saving...' : 'Save'}
+                    {isSubmitting ? 'Saving...' : 'Save Brand'}
                   </button>
                 </div>
               </form>

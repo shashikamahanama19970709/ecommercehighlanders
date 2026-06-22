@@ -1,5 +1,5 @@
 export interface ShippingOption {
-  estimate: string;
+  estimate?: string;
   id: string;
   label: string;
   description?: string;

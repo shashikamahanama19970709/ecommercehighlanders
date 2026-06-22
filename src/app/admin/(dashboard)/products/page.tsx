@@ -7,6 +7,7 @@ import { z } from 'zod';
 import Image from 'next/image';
 import type { Sport, CategorySchema, FieldDefinition, Brand, Product } from '@/types/product';
 import { NoticeBanner, type Notice } from '@/components/notice-banner';
+import { Search, Plus, Edit, Trash2, RefreshCw, AlertTriangle, X, Upload } from 'lucide-react';
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -53,6 +54,8 @@ export default function AdminProductsPage() {
   const [restockProduct, setRestockProduct] = useState<Product | null>(null);
   const [restockAmount, setRestockAmount] = useState<number>(0);
   const [isRestocking, setIsRestocking] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const { control, handleSubmit, watch, reset, setValue, clearErrors, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(baseSchema),
@@ -297,7 +300,7 @@ export default function AdminProductsPage() {
       submitData.featureImageKey = (data.featureImageKey ?? '').toString();
       submitData.imageKeys = Array.isArray(data.imageKeys) ? data.imageKeys : [];
 
-      const response = await fetch(`/api/products/${editProduct._id}` , {
+      const response = await fetch(`/api/products/${editProduct._id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitData),
@@ -373,6 +376,23 @@ export default function AdminProductsPage() {
 
     return true;
   });
+
+  // Reset page to 1 on filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  // Adjust pagination if products count changes
+  useEffect(() => {
+    const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [filteredProducts.length, currentPage]);
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
   const lowStockProducts = products.filter((p) => {
     const stock = p.stock ?? 0;
@@ -473,12 +493,12 @@ export default function AdminProductsPage() {
             control={control}
             rules={{ required: field.required }}
             render={({ field: controllerField }) => (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{field.label}</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">{field.label}</label>
                 <select
                   {...controllerField}
                   value={controllerField.value as string || ''}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
                 >
                   <option value="">Select {field.label}</option>
                   {field.options?.map(option => (
@@ -499,14 +519,14 @@ export default function AdminProductsPage() {
             defaultValue={0}
             rules={{ required: field.required, min: 0 }}
             render={({ field: controllerField }) => (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{field.label}</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">{field.label}</label>
                 <input
                   {...controllerField}
                   type="number"
                   step="0.01"
                   value={controllerField.value as number || 0}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
                   onChange={e => controllerField.onChange(parseFloat(e.target.value) || 0)}
                 />
               </div>
@@ -523,14 +543,14 @@ export default function AdminProductsPage() {
             defaultValue={0}
             rules={{ required: field.required, min: 0 }}
             render={({ field: controllerField }) => (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{field.label}</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">{field.label}</label>
                 <input
                   {...controllerField}
                   type="number"
                   step="0.01"
                   value={controllerField.value as number || 0}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
                   onChange={e => controllerField.onChange(parseFloat(e.target.value) || 0)}
                 />
               </div>
@@ -546,14 +566,14 @@ export default function AdminProductsPage() {
             control={control}
             rules={{ required: field.required }}
             render={({ field: controllerField }) => (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{field.label}</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">{field.label}</label>
                 <input
                   {...controllerField}
                   type="text"
                   value={controllerField.value as string || ''}
                   placeholder="#RRGGBB"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
                 />
               </div>
             )}
@@ -568,13 +588,13 @@ export default function AdminProductsPage() {
             control={control}
             rules={{ required: field.required }}
             render={({ field: controllerField }) => (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">{field.label}</label>
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500">{field.label}</label>
                 <input
                   {...controllerField}
                   type="text"
                   value={controllerField.value as string || ''}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
                 />
               </div>
             )}
@@ -584,18 +604,18 @@ export default function AdminProductsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-6">
+    <div className="min-h-screen bg-slate-50/50 p-6">
       <div className="mx-auto max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Product Management</h1>
-          <p className="text-muted-foreground">Create, view, filter, and restock products</p>
+          <h1 className="text-3xl font-black tracking-tight text-[#0f1a2e]">Product Management</h1>
+          <p className="text-xs text-slate-400 mt-1">Create, view, filter, and restock products</p>
         </div>
 
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
         {/* Actions */}
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="text-xs text-muted-foreground">
+          <div className="text-xs font-bold text-slate-400">
             {isLoadingProducts ? 'Loading products…' : `Showing ${filteredProducts.length} of ${products.length} products`}
           </div>
           <button
@@ -613,25 +633,26 @@ export default function AdminProductsPage() {
               setImagePreviews([]);
               setShowCreateForm(true);
             }}
-            className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90"
+            className="cursor-pointer rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all uppercase tracking-wider"
           >
             {showCreateForm ? 'Close Form' : 'Create New Product'}
           </button>
         </div>
 
         {/* Filters */}
-        <div className="mb-8 rounded-xl border bg-background/80 p-4 shadow-sm">
-          <div className="grid gap-3 md:grid-cols-5">
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">Sport</label>
+        <div className="mb-8 rounded-2xl bg-white border border-slate-100 p-6 shadow-sm">
+          <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#0f1a2e]">Filter Products</h3>
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-5">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sport</label>
               <select
                 value={filters.sport}
                 onChange={(e) =>
                   setFilters((prev) => ({ ...prev, sport: e.target.value, equipment: '', brand: '' }))
                 }
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold outline-none focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
               >
-                <option value="">All</option>
+                <option value="">All Sports</option>
                 {sports.map((s) => (
                   <option key={s._id} value={s.name}>
                     {s.name}
@@ -640,14 +661,14 @@ export default function AdminProductsPage() {
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">Equipment</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Equipment</label>
               <select
                 value={filters.equipment}
                 onChange={(e) => setFilters((prev) => ({ ...prev, equipment: e.target.value }))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold outline-none focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
               >
-                <option value="">All</option>
+                <option value="">All Equipment</option>
                 {equipmentFilterOptions.map((eq) => (
                   <option key={eq} value={eq}>
                     {eq}
@@ -656,14 +677,14 @@ export default function AdminProductsPage() {
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">Brand</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Brand</label>
               <select
                 value={filters.brand}
                 onChange={(e) => setFilters((prev) => ({ ...prev, brand: e.target.value }))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold outline-none focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
               >
-                <option value="">All</option>
+                <option value="">All Brands</option>
                 {brandFilterOptions.map((b) => (
                   <option key={b} value={b}>
                     {b}
@@ -672,73 +693,77 @@ export default function AdminProductsPage() {
               </select>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">Model</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Model</label>
               <input
                 value={filters.model}
                 onChange={(e) => setFilters((prev) => ({ ...prev, model: e.target.value }))}
                 placeholder="Search model…"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold outline-none focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[11px] font-medium text-muted-foreground">Stock</label>
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Stock</label>
               <select
                 value={filters.stock}
                 onChange={(e) => setFilters((prev) => ({ ...prev, stock: e.target.value as StockFilter }))}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold outline-none focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
               >
-                <option value="all">All</option>
-                <option value="in">In stock</option>
-                <option value="out">Out of stock</option>
-                <option value="low">Low stock</option>
+                <option value="all">All Items</option>
+                <option value="in">In Stock</option>
+                <option value="out">Out of Stock</option>
+                <option value="low">Low Stock</option>
               </select>
             </div>
           </div>
         </div>
 
         {/* Low stock section */}
-        <div className="mb-8 rounded-xl border bg-background/80 p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
+        <div className="mb-8 rounded-2xl bg-white border border-slate-100 p-6 shadow-sm">
+          <div className="mb-6 flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Low stock</h2>
-              <p className="text-xs text-muted-foreground">Products with stock ≤ {LOW_STOCK_THRESHOLD}</p>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#0f1a2e] flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-[#c8a84b]" />
+                <span>Low Stock Alerts</span>
+              </h2>
+              <p className="text-xs text-slate-400 mt-0.5">Products with stock ≤ {LOW_STOCK_THRESHOLD}</p>
             </div>
             <button
               type="button"
               onClick={fetchProducts}
-              className="cursor-pointer rounded-full border border-border bg-background px-3 py-1 text-xs hover:bg-accent"
+              className="cursor-pointer rounded-full border border-slate-200 hover:bg-slate-50 px-4 py-1.5 text-xs font-bold text-slate-600 transition-all flex items-center gap-1.5"
             >
-              Refresh
+              <RefreshCw className="h-3.5 w-3.5" />
+              <span>Refresh</span>
             </button>
           </div>
 
           {lowStockProducts.length === 0 ? (
-            <div className="rounded-lg border border-dashed bg-muted p-6 text-center text-xs text-muted-foreground">
-              No low-stock products.
+            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-6 text-center text-xs font-bold text-slate-400">
+              All items are well stocked.
             </div>
           ) : (
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               {lowStockProducts.map((p) => (
-                <div key={p._id} className="flex items-center justify-between rounded-lg border bg-background p-3">
+                <div key={p._id} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4 transition-all hover:bg-slate-50 hover:shadow-sm">
                   <div className="min-w-0">
-                    <p className="truncate text-xs font-medium text-foreground">
+                    <p className="truncate text-xs font-bold text-[#0f1a2e]">
                       {getRefName(p.equipment) || 'Product'}
                       {getModel(p) ? ` • ${getModel(p)}` : ''}
                     </p>
-                    <p className="truncate text-[11px] text-muted-foreground">
+                    <p className="truncate text-[10px] font-semibold text-slate-400 mt-0.5">
                       {getRefName(p.sport) || '—'} • {getRefName(p.brand) || '—'}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="rounded-full bg-orange-100 px-2 py-1 text-[10px] font-medium text-orange-700">
+                    <span className="rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-[10px] font-bold text-amber-700">
                       Stock: {p.stock ?? 0}
                     </span>
                     <button
                       type="button"
                       onClick={() => openRestock(p)}
-                      className="cursor-pointer rounded-full bg-foreground px-3 py-1 text-[11px] font-medium text-background hover:bg-foreground/90"
+                      className="cursor-pointer rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] px-4 py-1.5 text-xs font-bold text-white shadow-sm transition-all"
                     >
                       Restock
                     </button>
@@ -749,487 +774,546 @@ export default function AdminProductsPage() {
           )}
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="rounded-xl bg-background/80 p-6 shadow-sm">
-            <p className="text-xs text-muted-foreground">
-              Use filters to find products quickly. Click “Create New Product” to add a new item.
-            </p>
-          </div>
-
-          <div className="rounded-xl bg-background/80 p-6 shadow-sm">
-            <p className="text-xs text-muted-foreground">
-              Use “Restock” in the low-stock list or product cards to increase stock.
-            </p>
-          </div>
-        </div>
-
         {/* Products grid */}
         <div className="mt-10">
-          <h2 className="mb-4 text-sm font-semibold text-foreground">Products</h2>
+          <h2 className="mb-6 text-sm font-bold uppercase tracking-wider text-[#0f1a2e] border-b border-slate-100 pb-3">Products Inventory</h2>
           {isLoadingProducts ? (
-            <div className="rounded-xl border bg-background p-8 text-center text-xs text-muted-foreground">
-              Loading…
+            <div className="rounded-2xl border border-slate-100 bg-white p-12 text-center text-xs font-bold text-slate-400">
+              Loading inventory…
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="rounded-xl border border-dashed bg-muted p-8 text-center text-xs text-muted-foreground">
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-12 text-center text-xs font-bold text-slate-400">
               No products match the selected filters.
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredProducts.map((p) => {
-                const stock = p.stock ?? 0;
-                const badge = stock <= 0 ? 'Out of stock' : stock <= LOW_STOCK_THRESHOLD ? 'Low stock' : 'In stock';
-                const badgeClass =
-                  stock <= 0
-                    ? 'bg-red-100 text-red-700'
-                    : stock <= LOW_STOCK_THRESHOLD
-                      ? 'bg-orange-100 text-orange-700'
-                      : 'bg-green-100 text-green-700';
+            <div className="space-y-6">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {paginatedProducts.map((p) => {
+                  const stock = p.stock ?? 0;
+                  const badge = stock <= 0 ? 'Out of stock' : stock <= LOW_STOCK_THRESHOLD ? 'Low stock' : 'In stock';
+                  const badgeClass =
+                    stock <= 0
+                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                      : stock <= LOW_STOCK_THRESHOLD
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200';
 
-                const img =
-                  p.featureImageUrl ||
-                  (Array.isArray(p.imageUrls) ? p.imageUrls[0] : undefined) ||
-                  p.images?.[0];
+                  const img =
+                    p.featureImageUrl ||
+                    (Array.isArray(p.imageUrls) ? p.imageUrls[0] : undefined) ||
+                    p.images?.[0];
 
-                return (
-                  <div key={p._id} className="overflow-hidden rounded-2xl border bg-background shadow-sm">
-                    <div className="relative h-36 w-full bg-muted">
-                      {img ? (
-                        <Image src={img} alt={getRefName(p.equipment) || p._id || 'Product'} fill className="object-cover" />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
-                          No image
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-2 p-4 text-xs">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
-                          {getRefName(p.sport) || '—'}
-                        </p>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${badgeClass}`}>{badge}</span>
+                  return (
+                    <div key={p._id} className="group overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                      <div className="relative h-44 w-full bg-slate-50 border-b border-slate-100 overflow-hidden">
+                        {img ? (
+                          <Image src={img} alt={getRefName(p.equipment) || p._id || 'Product'} fill className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-[10px] font-bold uppercase tracking-wider text-slate-400 bg-slate-100">
+                            No image available
+                          </div>
+                        )}
+                        {/* Badge at top right */}
+                        <span className={`absolute top-3 right-3 rounded-full px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wider border shadow-sm ${badgeClass}`}>{badge}</span>
                       </div>
-                      <p className="truncate text-sm font-semibold text-foreground">
-                        {getRefName(p.equipment) || 'Product'}
-                      </p>
-                      <p className="truncate text-[11px] text-muted-foreground">
-                        {getRefName(p.brand) || '—'}{getModel(p) ? ` • ${getModel(p)}` : ''}
-                      </p>
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="text-sm font-semibold text-foreground">
-                          ${Number(p.price ?? 0).toFixed(2)}
-                          <span className="ml-1 text-[10px] text-muted-foreground">USD</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="rounded-full bg-muted px-2 py-1 text-[10px] text-muted-foreground">
+                      <div className="space-y-2.5 p-5 text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="truncate text-[10px] font-bold uppercase tracking-[0.18em] text-[#c8a84b]">
+                            {getRefName(p.sport) || '—'}
+                          </p>
+                          <span className="rounded-full bg-slate-50 border border-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-500">
                             Stock: {stock}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => openEdit(p)}
-                            className="cursor-pointer rounded-full border border-border bg-background px-3 py-1 text-[11px] font-medium text-foreground hover:bg-accent"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => openRestock(p)}
-                            className="cursor-pointer rounded-full bg-foreground px-3 py-1 text-[11px] font-medium text-background hover:bg-foreground/90"
-                          >
-                            Restock
-                          </button>
+                        </div>
+                        <p className="truncate text-sm font-bold text-[#0f1a2e]">
+                          {getRefName(p.equipment) || 'Product'}
+                        </p>
+                        <p className="truncate text-[11px] font-semibold text-slate-400">
+                          {getRefName(p.brand) || '—'}{getModel(p) ? ` • ${getModel(p)}` : ''}
+                        </p>
+                        <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                          <div className="text-sm font-black text-[#0f1a2e]">
+                            ${Number(p.price ?? 0).toFixed(2)}
+                            <span className="ml-1 text-[9px] font-bold text-slate-400">USD</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => openEdit(p)}
+                              className="cursor-pointer rounded-full border border-slate-200 hover:border-[#0f1a2e] hover:bg-slate-50 px-3.5 py-1.5 text-xs font-bold text-slate-600 hover:text-black transition-all"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => openRestock(p)}
+                              className="cursor-pointer rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] px-3.5 py-1.5 text-xs font-bold text-white shadow-sm transition-all"
+                            >
+                              Restock
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
+                  );
+                })}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-4">
+                  <p className="text-xs text-slate-500 font-semibold">
+                    Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to{" "}
+                    <span className="font-bold text-slate-800">
+                      {Math.min(startIndex + itemsPerPage, filteredProducts.length)}
+                    </span>{" "}
+                    of <span className="font-bold text-slate-800">{filteredProducts.length}</span> products
+                  </p>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="inline-flex h-8 px-3 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                    >
+                      Previous
+                    </button>
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all ${currentPage === page
+                            ? "bg-[#0f1a2e] text-white shadow"
+                            : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                          }`}
+                      >
+                        {page}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="inline-flex h-8 px-3 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+                    >
+                      Next
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* Create/Edit modal */}
         {(showCreateForm || !!editProduct) && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-            <div className="w-full max-w-3xl overflow-hidden rounded-2xl border bg-background shadow-lg">
-              <div className="flex items-center justify-between border-b px-5 py-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="w-full max-w-3xl rounded-[2rem] bg-white p-8 shadow-2xl border border-slate-100 relative animate-scale-in max-h-[90vh] overflow-y-auto">
+              {/* Close Icon Button */}
+              <button
+                type="button"
+                onClick={closeProductModal}
+                className="absolute top-6 right-6 flex h-9 w-9 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 hover:text-black hover:bg-slate-100 transition-all shadow-sm z-10"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="mb-6 flex items-center gap-4 border-b border-slate-100 pb-5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c8a84b]/10 text-[#c8a84b]">
+                  <Plus className="h-6 w-6" />
+                </div>
                 <div>
-                  <h2 className="text-sm font-semibold text-foreground">{editProduct ? 'Edit Product' : 'Create New Product'}</h2>
-                  <p className="text-[11px] text-muted-foreground">
+                  <h2 className="text-xl font-black text-[#0f1a2e] tracking-tight">{editProduct ? 'Edit Product' : 'Create New Product'}</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">
                     {editProduct ? 'Update details and save changes.' : 'Fill the form to add a product.'}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={closeProductModal}
-                  className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-accent"
-                >
-                  Close
-                </button>
               </div>
 
-              <div className="max-h-[80vh] overflow-auto p-5">
+              <div>
                 <form onSubmit={handleSubmit(editProduct ? onSubmitEdit : onSubmit)} className="space-y-6">
-              {/* Basic Information */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-foreground">Basic Information</h3>
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#0f1a2e] border-b border-slate-100 pb-2 mb-4">Basic Information</h3>
 
-                <Controller
-                  name="sport"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Sport</label>
-                      <select
-                        {...field}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                      >
-                        <option value="">Select Sport</option>
-                        {sports.map(sport => (
-                          <option key={sport._id} value={sport.name}>{sport.name}</option>
-                        ))}
-                      </select>
-                      {errors.sport && <p className="text-sm text-red-600">{errors.sport.message}</p>}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="equipment"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Equipment Type</label>
-                      <select
-                        {...field}
-                        disabled={!watchedSport}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none disabled:bg-gray-100"
-                      >
-                        <option value="">Select Equipment</option>
-                        {equipmentTypes.map(type => (
-                          <option key={type} value={type}>{type}</option>
-                        ))}
-                      </select>
-                      {errors.equipment && <p className="text-sm text-red-600">{errors.equipment.message}</p>}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="brand"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Brand</label>
-                      <select
-                        {...field}
-                        disabled={!watchedSport}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none disabled:bg-gray-100"
-                      >
-                        <option value="">Select Brand</option>
-                        {brands.map(brand => (
-                          <option key={brand._id} value={brand.name}>{brand.name}</option>
-                        ))}
-                      </select>
-                      {errors.brand && <p className="text-sm text-red-600">{errors.brand.message}</p>}
-                    </div>
-                  )}
-                />
-
-                <Controller
-                  name="model"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Model</label>
-                      <input
-                        {...field}
-                        type="text"
-                        placeholder="e.g., Pro, 2026, XL"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <Controller
+                        name="sport"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sport</label>
+                            <select
+                              {...field}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
+                            >
+                              <option value="">Select Sport</option>
+                              {sports.map(sport => (
+                                <option key={sport._id} value={sport.name}>{sport.name}</option>
+                              ))}
+                            </select>
+                            {errors.sport && <p className="text-xs text-rose-600 font-bold">{errors.sport.message}</p>}
+                          </div>
+                        )}
                       />
-                      <p className="text-xs text-muted-foreground">Images uploaded below will be used for this model.</p>
-                      {errors.model && <p className="text-sm text-red-600">{errors.model.message}</p>}
-                    </div>
-                  )}
-                />
 
-                <Controller
-                  name="price"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Price ($)</label>
-                      <input
-                        {...field}
-                        type="number"
-                        step="0.01"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                        onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                      <Controller
+                        name="equipment"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Equipment Type</label>
+                            <select
+                              {...field}
+                              disabled={!watchedSport}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10 disabled:bg-slate-50 disabled:text-slate-400"
+                            >
+                              <option value="">Select Equipment</option>
+                              {equipmentTypes.map(type => (
+                                <option key={type} value={type}>{type}</option>
+                              ))}
+                            </select>
+                            {errors.equipment && <p className="text-xs text-rose-600 font-bold">{errors.equipment.message}</p>}
+                          </div>
+                        )}
                       />
-                      {errors.price && <p className="text-sm text-red-600">{errors.price.message}</p>}
-                    </div>
-                  )}
-                />
 
-                <Controller
-                  name="stock"
-                  control={control}
-                  render={({ field }) => (
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Stock</label>
-                      <input
-                        {...field}
-                        type="number"
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
-                        onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                      <Controller
+                        name="brand"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Brand</label>
+                            <select
+                              {...field}
+                              disabled={!watchedSport}
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10 disabled:bg-slate-50 disabled:text-slate-400"
+                            >
+                              <option value="">Select Brand</option>
+                              {brands.map(brand => (
+                                <option key={brand._id} value={brand.name}>{brand.name}</option>
+                              ))}
+                            </select>
+                            {errors.brand && <p className="text-xs text-rose-600 font-bold">{errors.brand.message}</p>}
+                          </div>
+                        )}
                       />
-                      {errors.stock && <p className="text-sm text-red-600">{errors.stock.message}</p>}
-                    </div>
-                  )}
-                />
-              </div>
 
-              {/* Product Images */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-medium text-foreground">Product Images</h3>
-
-                {/* Feature Image */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Feature Image</label>
-                  <div className="space-y-3">
-                    {featureImagePreview && (
-                      <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center overflow-hidden border">
-                          <Image
-                            src={featureImagePreview}
-                            alt="Feature image preview"
-                            width={64}
-                            height={64}
-                            className="object-cover"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = `https://ui-avatars.com/api/?name=Product&background=6366f1&color=ffffff&size=64&font-size=0.6`;
-                            }}
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">Feature image uploaded</p>
-                          <p className="text-xs text-gray-500">This will be the main product image</p>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleFeatureImageUpload(file);
-                        }}
-                        className="hidden"
-                        id="feature-image-upload"
-                        disabled={uploadingImage}
+                      <Controller
+                        name="model"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Model</label>
+                            <input
+                              {...field}
+                              type="text"
+                              placeholder="e.g., Pro, 2026, XL"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
+                            />
+                            <p className="text-[10px] text-slate-400 mt-1">Images uploaded below will be used for this model.</p>
+                            {errors.model && <p className="text-xs text-rose-600 font-bold">{errors.model.message}</p>}
+                          </div>
+                        )}
                       />
-                      <label
-                        htmlFor="feature-image-upload"
-                        className="cursor-pointer flex flex-col items-center space-y-2"
-                      >
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
-                        </div>
-                        <div className="text-center">
-                          {uploadingImage ? (
-                            <p className="text-sm text-blue-600">Uploading...</p>
-                          ) : (
-                            <>
-                              <p className="text-sm font-medium text-gray-900">Upload feature image</p>
-                              <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                            </>
-                          )}
-                        </div>
-                      </label>
-                    </div>
 
-                    <Controller
-                      name="featureImageKey"
-                      control={control}
-                      render={({ field }) => (
-                        <input {...field} type="hidden" />
-                      )}
-                    />
+                      <Controller
+                        name="price"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Price ($)</label>
+                            <input
+                              {...field}
+                              type="number"
+                              step="0.01"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
+                              onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                            />
+                            {errors.price && <p className="text-xs text-rose-600 font-bold">{errors.price.message}</p>}
+                          </div>
+                        )}
+                      />
+
+                      <Controller
+                        name="stock"
+                        control={control}
+                        render={({ field }) => (
+                          <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Stock</label>
+                            <input
+                              {...field}
+                              type="number"
+                              className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
+                              onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                            />
+                            {errors.stock && <p className="text-xs text-rose-600 font-bold">{errors.stock.message}</p>}
+                          </div>
+                        )}
+                      />
+                    </div>
                   </div>
-                  {errors.featureImageKey && <p className="text-sm text-red-600">{errors.featureImageKey.message}</p>}
-                </div>
 
-                {/* Additional Images */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Additional Images</label>
-                  <div className="space-y-3">
-                    {imagePreviews.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {imagePreviews.map((preview, index) => (
-                          <div key={index} className="relative group">
-                            <div className="w-full h-24 bg-white rounded-lg flex items-center justify-center overflow-hidden border">
+                  {/* Product Images */}
+                  <div className="space-y-5">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-[#0f1a2e] border-b border-slate-100 pb-2 mb-4 mt-6">Product Images</h3>
+
+                    {/* Feature Image */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Feature Image</label>
+                      <div className="space-y-3">
+                        {featureImagePreview && (
+                          <div className="flex items-center space-x-3 p-3 bg-slate-50 border border-slate-100 rounded-xl">
+                            <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-200/60">
                               <Image
-                                src={preview}
-                                alt={`Product image ${index + 1}`}
-                                width={96}
-                                height={96}
-                                className="object-cover w-full h-full"
+                                src={featureImagePreview}
+                                alt="Feature image preview"
+                                width={64}
+                                height={64}
+                                className="object-cover"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
-                                  target.src = `https://ui-avatars.com/api/?name=Img${index + 1}&background=6366f1&color=ffffff&size=96&font-size=0.6`;
+                                  target.src = `https://ui-avatars.com/api/?name=Product&background=0f1a2e&color=ffffff&size=64&font-size=0.6`;
                                 }}
                               />
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => removeImage(index)}
-                              className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              ×
-                            </button>
+                            <div>
+                              <p className="text-xs font-bold text-[#0f1a2e]">Feature image uploaded</p>
+                              <p className="text-[10px] text-slate-500">This will be the main product image</p>
+                            </div>
                           </div>
-                        ))}
-                      </div>
-                    )}
+                        )}
 
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-blue-400 transition-colors">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={(e) => {
-                          const files = Array.from(e.target.files || []);
-                          files.forEach(file => handleImageUpload(file));
-                        }}
-                        className="hidden"
-                        id="product-images-upload"
-                        disabled={uploadingImage}
-                      />
-                      <label
-                        htmlFor="product-images-upload"
-                        className="cursor-pointer flex flex-col items-center space-y-2"
-                      >
-                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                          <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
+                        <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 hover:border-[#0f1a2e] transition-colors bg-slate-50/50">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleFeatureImageUpload(file);
+                            }}
+                            className="hidden"
+                            id="feature-image-upload"
+                            disabled={uploadingImage}
+                          />
+                          <label
+                            htmlFor="feature-image-upload"
+                            className="cursor-pointer flex flex-col items-center space-y-2"
+                          >
+                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
+                              <Upload className="h-5 w-5 text-slate-400" />
+                            </div>
+                            <div className="text-center">
+                              {uploadingImage ? (
+                                <p className="text-xs font-bold text-[#c8a84b] animate-pulse">Uploading...</p>
+                              ) : (
+                                <>
+                                  <p className="text-xs font-bold text-slate-700">Upload feature image</p>
+                                  <p className="text-[10px] text-slate-400">PNG, JPG, GIF up to 10MB</p>
+                                </>
+                              )}
+                            </div>
+                          </label>
                         </div>
-                        <div className="text-center">
-                          {uploadingImage ? (
-                            <p className="text-sm text-blue-600">Uploading...</p>
-                          ) : (
-                            <>
-                              <p className="text-sm font-medium text-gray-900">Add product images</p>
-                              <p className="text-xs text-gray-500">Select multiple images (PNG, JPG, GIF up to 10MB each)</p>
-                            </>
+
+                        <Controller
+                          name="featureImageKey"
+                          control={control}
+                          render={({ field }) => (
+                            <input {...field} type="hidden" />
                           )}
-                        </div>
-                      </label>
+                        />
+                      </div>
+                      {errors.featureImageKey && <p className="text-xs text-rose-600 font-bold">{errors.featureImageKey.message}</p>}
                     </div>
 
-                    <Controller
-                      name="imageKeys"
-                      control={control}
-                      render={({ field }) => (
-                        <input {...field} type="hidden" />
-                      )}
-                    />
+                    {/* Additional Images */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Additional Images</label>
+                      <div className="space-y-3">
+                        {imagePreviews.length > 0 && (
+                          <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+                            {imagePreviews.map((preview, index) => (
+                              <div key={index} className="relative group">
+                                <div className="w-full h-20 bg-white rounded-xl flex items-center justify-center overflow-hidden border border-slate-200/60 shadow-sm">
+                                  <Image
+                                    src={preview}
+                                    alt={`Product image ${index + 1}`}
+                                    width={80}
+                                    height={80}
+                                    className="object-cover w-full h-full"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.src = `https://ui-avatars.com/api/?name=Img${index + 1}&background=0f1a2e&color=ffffff&size=80&font-size=0.6`;
+                                    }}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeImage(index)}
+                                  className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center shadow transition-all text-xs font-bold"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 hover:border-[#0f1a2e] transition-colors bg-slate-50/50">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              files.forEach(file => handleImageUpload(file));
+                            }}
+                            className="hidden"
+                            id="product-images-upload"
+                            disabled={uploadingImage}
+                          />
+                          <label
+                            htmlFor="product-images-upload"
+                            className="cursor-pointer flex flex-col items-center space-y-2"
+                          >
+                            <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm border border-slate-100">
+                              <Upload className="h-5 w-5 text-slate-400" />
+                            </div>
+                            <div className="text-center">
+                              {uploadingImage ? (
+                                <p className="text-xs font-bold text-[#c8a84b] animate-pulse">Uploading...</p>
+                              ) : (
+                                <>
+                                  <p className="text-xs font-bold text-slate-700">Add product gallery images</p>
+                                  <p className="text-[10px] text-slate-400">Select multiple images (PNG, JPG, GIF up to 10MB)</p>
+                                </>
+                              )}
+                            </div>
+                          </label>
+                        </div>
+
+                        <Controller
+                          name="imageKeys"
+                          control={control}
+                          render={({ field }) => (
+                            <input {...field} type="hidden" />
+                          )}
+                        />
+                      </div>
+                      {errors.imageKeys && <p className="text-xs text-rose-600 font-bold">{errors.imageKeys.message}</p>}
+                    </div>
                   </div>
-                  {errors.imageKeys && <p className="text-sm text-red-600">{errors.imageKeys.message}</p>}
+
+                  {/* Dynamic Specifications */}
+                  {schema && schema.fields && schema.fields.length > 0 && (
+                    <div className="space-y-4 rounded-[2rem] bg-slate-50 border border-slate-100 p-6 my-6">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-[#0f1a2e] border-b border-slate-200 pb-2">Specifications</h3>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {schema.fields.map((field) => renderField(field))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-6 border-t border-slate-100 mt-6">
+                    <button
+                      type="button"
+                      onClick={closeProductModal}
+                      className="flex-1 rounded-full border border-slate-200 hover:bg-slate-50 py-3 text-xs font-bold text-slate-700 transition-all uppercase tracking-wider"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-1 rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] py-3 text-xs font-bold text-white shadow-md hover:shadow-lg disabled:opacity-50 transition-all uppercase tracking-wider"
+                    >
+                      {editProduct ? (isSubmitting ? 'Saving...' : 'Save Changes') : (isSubmitting ? 'Creating...' : 'Create Product')}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Restock modal */}
+        {restockProduct && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in">
+            <div className="w-full max-w-md rounded-[2rem] bg-white p-8 shadow-2xl border border-slate-100 relative animate-scale-in">
+              {/* Close Icon Button */}
+              <button
+                type="button"
+                onClick={closeRestock}
+                className="absolute top-5 right-5 flex h-8 w-8 items-center justify-center rounded-full bg-slate-50 border border-slate-100 text-slate-500 hover:text-black hover:bg-slate-100 transition-all"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              <div className="mb-6 flex items-center gap-4 border-b border-slate-100 pb-5">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#c8a84b]/10 text-[#c8a84b]">
+                  <RefreshCw className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-[#0f1a2e] tracking-tight">Restock Product</h2>
+                  <p className="text-xs text-slate-400 mt-0.5">Add inventory to this product</p>
                 </div>
               </div>
 
-              {/* Dynamic Specifications */}
-              {schema && schema.fields && schema.fields.length > 0 && (
-                <div className="space-y-4 rounded-lg bg-blue-50/50 p-4">
-                  <h3 className="text-lg font-medium text-gray-900">Specifications</h3>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {schema.fields.map((field) => renderField(field))}
+              <div className="space-y-5">
+                <div className="grid grid-cols-2 gap-3 bg-slate-50 p-4 border border-slate-100 rounded-2xl">
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Sport</p>
+                    <p className="font-semibold text-slate-700 text-xs mt-0.5">{getRefName(restockProduct.sport) || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Equipment</p>
+                    <p className="font-semibold text-slate-700 text-xs mt-0.5">{getRefName(restockProduct.equipment) || '—'}</p>
+                  </div>
+                  <div className="border-t border-slate-200/50 pt-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Brand</p>
+                    <p className="font-semibold text-slate-700 text-xs mt-0.5">{getRefName(restockProduct.brand) || '—'}</p>
+                  </div>
+                  <div className="border-t border-slate-200/50 pt-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Model</p>
+                    <p className="font-semibold text-slate-700 text-xs mt-0.5">{getModel(restockProduct) || '—'}</p>
                   </div>
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="cursor-pointer w-full rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-              >
-                {editProduct ? (isSubmitting ? 'Saving...' : 'Save Changes') : (isSubmitting ? 'Creating...' : 'Create Product')}
-              </button>
-            </form>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Add stock</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={restockAmount}
+                    onChange={(e) => setRestockAmount(parseInt(e.target.value) || 0)}
+                    className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold outline-none transition-all focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Current stock: <span className="font-bold text-[#0f1a2e]">{restockProduct.stock ?? 0}</span>
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-3">
+                  <button
+                    type="button"
+                    onClick={closeRestock}
+                    className="flex-1 rounded-full border border-slate-200 hover:bg-slate-50 py-2.5 text-xs font-bold text-slate-700 transition-colors uppercase tracking-wider"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isRestocking}
+                    onClick={submitRestock}
+                    className="flex-1 rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg disabled:opacity-50 transition-all uppercase tracking-wider"
+                  >
+                    {isRestocking ? 'Restocking…' : 'Restock'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
-
-      {/* Restock modal */}
-      {restockProduct && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-2xl border bg-background p-5 shadow-lg">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-foreground">Restock product</h3>
-              <button
-                type="button"
-                onClick={closeRestock}
-                className="cursor-pointer rounded-full border border-border px-2 py-1 text-xs hover:bg-accent"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[11px] font-medium text-muted-foreground">Sport</p>
-                  <p className="rounded-md border bg-muted px-3 py-2">{getRefName(restockProduct.sport) || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-medium text-muted-foreground">Equipment</p>
-                  <p className="rounded-md border bg-muted px-3 py-2">{getRefName(restockProduct.equipment) || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-medium text-muted-foreground">Brand</p>
-                  <p className="rounded-md border bg-muted px-3 py-2">{getRefName(restockProduct.brand) || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-[11px] font-medium text-muted-foreground">Model</p>
-                  <p className="rounded-md border bg-muted px-3 py-2">{getModel(restockProduct) || '—'}</p>
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <p className="text-[11px] font-medium text-muted-foreground">Add stock</p>
-                <input
-                  type="number"
-                  min={1}
-                  value={restockAmount}
-                  onChange={(e) => setRestockAmount(parseInt(e.target.value) || 0)}
-                  className="w-full rounded-md border border-border bg-background px-3 py-2"
-                />
-                <p className="text-[11px] text-muted-foreground">
-                  Current stock: <span className="font-medium text-foreground">{restockProduct.stock ?? 0}</span>
-                </p>
-              </div>
-
-              <button
-                type="button"
-                disabled={isRestocking}
-                onClick={submitRestock}
-                className="cursor-pointer w-full rounded-md bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-              >
-                {isRestocking ? 'Restocking…' : 'Restock'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+    </ div>
   );
 }

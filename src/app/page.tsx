@@ -53,26 +53,50 @@ export default async function Home() {
 
   return (
     <div className="flex-1">
-      <header className="fixed inset-x-0 top-0 z-50 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="mx-auto w-full max-w-6xl px-6">
-          <div className="flex h-16 items-center justify-between">
-            <Link href="/" className="cursor-pointer flex items-center gap-3">
-              <span className="relative">
-                <span
-                  className="pointer-events-none absolute left-1/2 top-1/2 h-16 w-16 -translate-x-1/2 -translate-y-1/2 bg-foreground shadow-lg sm:h-20 sm:w-20"
-                  style={{
-                    clipPath:
-                      "polygon(25% 6%, 75% 6%, 96% 50%, 75% 94%, 25% 94%, 4% 50%)",
-                  }}
-                  aria-hidden="true"
-                />
-                <span className="relative z-10 grid h-12 w-12 place-items-center text-background sm:h-14 sm:w-14">
-                  <span className="text-sm font-semibold sm:text-base">S</span>
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-border/60 bg-white/90 backdrop-blur-md supports-[backdrop-filter]:bg-white/75 shadow-sm transition-shadow duration-300 overflow-visible">
+        <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+          <div className="flex h-16 items-center justify-between gap-4">
+            {/* Logo */}
+            <Link href="/" className="cursor-pointer group flex items-center gap-2 shrink-0" aria-label="Highlanders Sports & Fitness Home">
+              {/* SVG Logo Mark */}
+              <div className="relative h-10 w-10 shrink-0">
+                <svg viewBox="0 0 80 80" className="h-full w-full" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="hdr-silver" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#e8edf5"/>
+                      <stop offset="50%" stopColor="#c8d4e4"/>
+                      <stop offset="100%" stopColor="#8898b0"/>
+                    </linearGradient>
+                    <linearGradient id="hdr-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#d4a84b"/>
+                      <stop offset="100%" stopColor="#9a6e08"/>
+                    </linearGradient>
+                    <linearGradient id="hdr-navy" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#1e3a5f"/>
+                      <stop offset="100%" stopColor="#0f1a2e"/>
+                    </linearGradient>
+                  </defs>
+                  {/* Left mountain */}
+                  <polygon points="6,62 26,18 46,62" fill="url(#hdr-silver)"/>
+                  {/* Right mountain (taller) */}
+                  <polygon points="24,62 44,8 64,62" fill="url(#hdr-silver)" opacity="0.85"/>
+                  {/* Snow cap */}
+                  <polygon points="44,8 39,24 49,24" fill="white" opacity="0.95"/>
+                  {/* Gold wave */}
+                  <path d="M4,68 Q22,52 42,60 Q58,66 74,52" stroke="url(#hdr-gold)" strokeWidth="4" fill="none" strokeLinecap="round"/>
+                  {/* Navy wave */}
+                  <path d="M4,74 Q24,62 44,68 Q60,73 76,60" stroke="url(#hdr-navy)" strokeWidth="3" fill="none" strokeLinecap="round" opacity="0.7"/>
+                </svg>
+              </div>
+              {/* Brand text */}
+              <div className="hidden sm:flex flex-col leading-tight">
+                <span className="text-sm font-bold tracking-widest uppercase text-[#0f1a2e] group-hover:text-[#1e3a5f] transition-colors">
+                  Highlanders
                 </span>
-              </span>
-              <span className="hidden text-lg font-semibold tracking-tight text-foreground sm:inline">
-                Sportify Shop
-              </span>
+                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{color:'#c8a84b'}}>
+                  Sports &amp; Fitness
+                </span>
+              </div>
             </Link>
 
             <HeaderNav />
