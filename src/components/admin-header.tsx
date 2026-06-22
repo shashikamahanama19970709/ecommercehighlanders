@@ -1,9 +1,10 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
 import { LogOut, User, Bell, LayoutDashboard, Store, Trophy, Wrench, Tag, Package, CreditCard } from "lucide-react";
 import Image from "next/image";
+import type { Session } from "next-auth";
 
 const pageMap: Record<string, { title: string; subtitle: string; icon: React.ElementType }> = {
   "/admin":           { title: "Dashboard",   subtitle: "Overview of your store performance",      icon: LayoutDashboard },
@@ -23,8 +24,7 @@ function getCurrentPage(pathname: string) {
   return { title: "Admin", subtitle: "Highlanders Sports & Fitness", icon: LayoutDashboard };
 }
 
-export function AdminHeader() {
-  const { data: session } = useSession();
+export function AdminHeader({ session }: { session: Session | null }) {
   const pathname = usePathname();
   const page = getCurrentPage(pathname);
   const PageIcon = page.icon;

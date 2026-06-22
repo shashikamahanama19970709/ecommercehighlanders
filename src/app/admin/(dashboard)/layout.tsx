@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     <div className="flex h-screen overflow-hidden" style={{ background: "#f0f4f8" }}>
       <AdminSidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <AdminHeader />
+        <AdminHeader session={session} />
         <main className="flex-1 overflow-y-auto p-6 pb-16" style={{ scrollbarWidth: "thin", scrollbarColor: "#c8d4e4 transparent" }}>
           {children}
         </main>
