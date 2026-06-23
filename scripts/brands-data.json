@@ -1,0 +1,128 @@
+[
+  {
+    "name": "Nike",
+    "logoUrl": "https://ui-avatars.com/api/?name=Nike&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Adidas",
+    "logoUrl": "https://ui-avatars.com/api/?name=Adidas&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Puma",
+    "logoUrl": "https://ui-avatars.com/api/?name=Puma&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Kookaburra",
+    "logoUrl": "https://ui-avatars.com/api/?name=Kookaburra&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Rawlings",
+    "logoUrl": "https://ui-avatars.com/api/?name=Rawlings&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Wilson",
+    "logoUrl": "https://ui-avatars.com/api/?name=Wilson&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Everlast",
+    "logoUrl": "https://ui-avatars.com/api/?name=Everlast&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Yonex",
+    "logoUrl": "https://ui-avatars.com/api/?name=Yonex&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Gray-Nicolls",
+    "logoUrl": "https://ui-avatars.com/api/?name=Gray-Nicolls&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "New Balance",
+    "logoUrl": "https://ui-avatars.com/api/?name=New+Balance&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Under Armour",
+    "logoUrl": "https://ui-avatars.com/api/?name=Under+Armour&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Reebok",
+    "logoUrl": "https://ui-avatars.com/api/?name=Reebok&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "Sareen Sports",
+    "logoUrl": "https://ui-avatars.com/api/?name=Sareen+Sports&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  },
+  {
+    "name": "iopop",
+    "logoUrl": "https://ui-avatars.com/api/?name=iopop&background=000000&color=ffffff&size=100&font-size=0.6",
+    "logoKey": "",
+    "associatedSports": [],
+    "isPublished": true,
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+]
