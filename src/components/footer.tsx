@@ -319,9 +319,9 @@ export default function Footer() {
                   </svg>
                 </span>
                 <span className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                  123 Sports Avenue,
+                  71-75 Shelton Street,
                   <br />
-                  Colombo 03, Sri Lanka
+                  London, WC2H 9JQ
                 </span>
               </li>
               <li className="flex items-center gap-3">
@@ -335,11 +335,11 @@ export default function Footer() {
                   </svg>
                 </span>
                 <a
-                  href="tel:+94112345678"
+                  href="tel:+447491807132"
                   className="text-sm transition-colors hover:text-[#c8a84b]"
                   style={{ color: 'rgba(255,255,255,0.55)' }}
                 >
-                  +94 11 234 5678
+                  +44 7491807132
                 </a>
               </li>
               <li className="flex items-center gap-3">
@@ -371,7 +371,7 @@ export default function Footer() {
                   </svg>
                 </span>
                 <a
-                  href="https://maps.google.com/?q=Colombo,Sri+Lanka"
+                  href="https://maps.google.com/?q=71-75+Shelton+Street,+London,+WC2H+9JQ"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm transition-colors hover:text-[#c8a84b]"

@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   },
   description:
     "Train like a champion. Premium sports gear and fitness equipment from Highlanders Sports & Fitness — your one-stop destination for cricket, football, gym, and more.",
-  keywords: ["sports equipment", "fitness gear", "cricket", "football", "gym", "Sri Lanka", "Highlanders"],
+  keywords: ["sports equipment", "fitness gear", "cricket", "football", "gym", "London", "UK", "Highlanders"],
   authors: [{ name: "Highlanders Sports & Fitness" }],
   icons: {
     icon: "/favicon.ico",

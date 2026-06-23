@@ -30,17 +30,28 @@ const groups = [
   { key: "orders",   label: "Orders"        },
 ];
 
-export function AdminSidebar() {
+export function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
     pathname === href || (href !== "/admin" && pathname.startsWith(href + "/"));
 
   return (
-    <aside
-      className="flex h-full w-64 shrink-0 flex-col overflow-hidden"
-      style={{ background: "linear-gradient(180deg, #0f1a2e 0%, #0d1625 100%)" }}
-    >
+    <>
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-[#000]/40 backdrop-blur-xs transition-opacity lg:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex h-full w-64 shrink-0 flex-col overflow-hidden transition-transform duration-300 lg:static lg:translate-x-0 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+        style={{ background: "linear-gradient(180deg, #0f1a2e 0%, #0d1625 100%)" }}
+      >
       {/* ── Brand header ───────────────────────────────────── */}
       <div
         className="flex shrink-0 flex-col items-center justify-center gap-2 px-5 py-6"
@@ -116,6 +127,7 @@ export function AdminSidebar() {
                     <li key={item.name}>
                       <Link
                         href={item.href}
+                        onClick={onClose}
                         className="group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150"
                         style={
                           active
@@ -194,5 +206,6 @@ export function AdminSidebar() {
         </Link>
       </div>
     </aside>
+    </>
   );
 }

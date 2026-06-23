@@ -24,7 +24,13 @@ function getCurrentPage(pathname: string) {
   return { title: "Admin", subtitle: "Highlanders Sports & Fitness", icon: LayoutDashboard };
 }
 
-export function AdminHeader({ session }: { session: Session | null }) {
+export function AdminHeader({
+  session,
+  onMenuClick,
+}: {
+  session: Session | null;
+  onMenuClick: () => void;
+}) {
   const pathname = usePathname();
   const page = getCurrentPage(pathname);
   const PageIcon = page.icon;
@@ -45,10 +51,22 @@ export function AdminHeader({ session }: { session: Session | null }) {
 
       <div className="flex items-center justify-between gap-4 px-6 py-3">
         {/* ── Left: Page identity ── */}
-        <div className="flex min-w-0 items-center gap-3">
+        <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+          {/* Hamburger Menu Toggle for Mobile */}
+          <button
+            type="button"
+            onClick={onMenuClick}
+            aria-label="Open navigation menu"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e8edf5] text-[#94a3b8] transition-all hover:border-[#c8d4e4] hover:bg-[#f0f4f8] hover:text-[#0f1a2e] focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]/20 lg:hidden"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
           {/* Page icon bubble */}
           <div
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+            className="hidden sm:flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
             style={{ background: "linear-gradient(135deg, #0f1a2e 0%, #1e3a5f 100%)" }}
           >
             <PageIcon className="h-5 w-5 text-white" />

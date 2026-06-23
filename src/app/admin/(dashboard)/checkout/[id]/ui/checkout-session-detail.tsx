@@ -97,26 +97,28 @@ export function CheckoutSessionDetail({ id }: { id: string }) {
         </div>
       )}
       <h2 className="mt-6 mb-2 font-semibold">Items</h2>
-      <table className="min-w-full border text-sm mb-4">
-        <thead>
-          <tr className="bg-muted">
-            <th className="p-2 border">Product</th>
-            <th className="p-2 border">Quantity</th>
-            <th className="p-2 border">Price (£)</th>
-            <th className="p-2 border">Subtotal (£)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {session.items.map((item) => (
-            <tr key={item.productId}>
-              <td className="p-2 border">{item.name}</td>
-              <td className="p-2 border">{item.quantity}</td>
-              <td className="p-2 border">£{item.priceUsd.toFixed(2)}</td>
-              <td className="p-2 border">£{(item.priceUsd * item.quantity).toFixed(2)}</td>
+      <div className="overflow-x-auto">
+        <table className="min-w-full border text-sm mb-4">
+          <thead>
+            <tr className="bg-muted">
+              <th className="p-2 border">Product</th>
+              <th className="p-2 border">Quantity</th>
+              <th className="p-2 border">Price (£)</th>
+              <th className="p-2 border">Subtotal (£)</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {session.items.map((item) => (
+              <tr key={item.productId}>
+                <td className="p-2 border">{item.name}</td>
+                <td className="p-2 border">{item.quantity}</td>
+                <td className="p-2 border">£{item.priceUsd.toFixed(2)}</td>
+                <td className="p-2 border">£{(item.priceUsd * item.quantity).toFixed(2)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <div className="flex gap-2 mt-4">
         <button className="px-4 py-2 rounded bg-green-600 text-white">Mark as Paid</button>
         <button className="px-4 py-2 rounded bg-red-600 text-white">Mark as Failed</button>
