@@ -27,6 +27,7 @@ const s3Client =
           secretAccessKey: b2AppKey,
         },
         forcePathStyle: true,
+        disableChecksumValidation: true,
       })
     : null;
 
