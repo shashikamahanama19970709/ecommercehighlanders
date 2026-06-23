@@ -10,8 +10,8 @@ export function AboutUsLandingSection({ moduleDoc }: Props) {
   if (!moduleDoc) return null;
   const title = moduleDoc.title?.trim() || '';
   const description = moduleDoc.description?.trim() || '';
-  const image1 = moduleDoc.image1Url;
-  const image2 = moduleDoc.image2Url;
+  const image1 = moduleDoc.image1Url || "/images/about-placeholder-1.png";
+  const image2 = moduleDoc.image2Url || "/images/about-placeholder-2.png";
 
   if (!title && !description && !image1 && !image2) return null;
 

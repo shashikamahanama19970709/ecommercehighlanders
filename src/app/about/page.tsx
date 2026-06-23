@@ -31,8 +31,8 @@ export default async function AboutPage() {
   const description = data?.description || 
     "We pride ourselves on providing fast, efficient and courteous service, always putting you, the customer first.\n\nWe hold a wide range of products in stock and aim to dispatch the vast majority of orders within 24 hours. We are authorised stockists for every item we sell, which means you get the full manufacturers warranty on all our products.";
   
-  const image1 = data?.image1Url || "/images/about-placeholder-1.jpg";
-  const image2 = data?.image2Url || "/images/about-placeholder-2.jpg";
+  const image1 = data?.image1Url || "/images/about-placeholder-1.png";
+  const image2 = data?.image2Url || "/images/about-placeholder-2.png";
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50/50">
