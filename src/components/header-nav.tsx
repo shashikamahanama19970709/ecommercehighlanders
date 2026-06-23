@@ -34,6 +34,7 @@ export function HeaderNav() {
   const navLinks = [
     { label: 'Shop', href: '#catalog' },
     { label: 'Shop by Sport', href: '/shop-by-sport' },
+    { label: 'Best Selling', href: '/best-selling' },
     { label: 'About Us', href: '/about' },
   ];
 

@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@auth/mongodb-adapter": "^3.11.1",
-    "@aws-sdk/s3-request-presigner": "^3.1029.0",
+    "@aws-sdk/client-s3": "^3.1074.0",
+    "@aws-sdk/s3-request-presigner": "^3.1074.0",
     "@hookform/resolvers": "^5.2.2",
     "@types/nodemailer": "^8.0.1",
+    "bcryptjs": "^3.0.3",
     "lucide-react": "^1.8.0",
     "mongoose": "^9.4.1",
     "next": "16.2.3",
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/bcryptjs": "^3.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

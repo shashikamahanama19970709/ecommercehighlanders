@@ -6,7 +6,7 @@ import Product from '@/lib/models/Product';
 import Sport from '@/lib/models/Sport';
 import Equipment from '@/lib/models/Equipment';
 import Brand from '@/lib/models/Brand';
-import { connectToDatabase } from '@/lib/mongodb';
+import { connectToDatabase, getCollection } from '@/lib/mongodb';
 
 const b2Endpoint = process.env.B2_ENDPOINT;
 const b2Bucket = process.env.B2_BUCKET_NAME;
@@ -104,11 +104,56 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const sort = searchParams.get('sort');
+
     const products = await Product.find(query)
       .populate('sport', 'name')
       .populate('equipment', 'name')
-      .populate('brand', 'name')
-      .sort({ createdAt: -1 });
+      .populate('brand', 'name');
+
+    if (sort === 'best-selling') {
+      try {
+        const ordersCol = await getCollection('orders');
+        const salesData = await ordersCol.aggregate([
+          { $match: { status: { $nin: ['failed', 'cancelled'] } } },
+          { $unwind: '$items' },
+          {
+            $group: {
+              _id: '$items.productId',
+              totalSold: { $sum: '$items.quantity' }
+            }
+          }
+        ]).toArray();
+
+        const salesMap = new Map<string, number>(
+          salesData.map((item) => [String(item._id), Number(item.totalSold)])
+        );
+
+        products.sort((a, b) => {
+          const soldA = salesMap.get(a._id.toString()) || 0;
+          const soldB = salesMap.get(b._id.toString()) || 0;
+          if (soldB !== soldA) {
+            return soldB - soldA;
+          }
+          const timeA = new Date(a.createdAt || 0).getTime();
+          const timeB = new Date(b.createdAt || 0).getTime();
+          return timeB - timeA;
+        });
+      } catch (err) {
+        console.error('Error fetching best sellers from orders:', err);
+        products.sort((a, b) => {
+          const timeA = new Date(a.createdAt || 0).getTime();
+          const timeB = new Date(b.createdAt || 0).getTime();
+          return timeB - timeA;
+        });
+      }
+    } else {
+      products.sort((a, b) => {
+        const timeA = new Date(a.createdAt || 0).getTime();
+        const timeB = new Date(b.createdAt || 0).getTime();
+        return timeB - timeA;
+      });
+    }
 
     // Generate signed URLs for images
     if (s3Client) {

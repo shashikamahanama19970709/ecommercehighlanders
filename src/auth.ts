@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
@@ -6,6 +6,10 @@ import clientPromise from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 import { getCollection } from "@/lib/mongodb";
 import type { AppUser } from "@/types/user";
+
+class EmailNotVerified extends CredentialsSignin {
+  code = "EMAIL_NOT_VERIFIED";
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
@@ -33,7 +37,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user || !user.passwordHash) return null;
         if (!user.emailVerified) {
           // Special error string for unverified
-          throw new Error("EMAIL_NOT_VERIFIED");
+          throw new EmailNotVerified();
         }
         const isValid = await bcrypt.compare(password, user.passwordHash as string);
         if (!isValid) return null;

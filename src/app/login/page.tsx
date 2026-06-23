@@ -24,26 +24,48 @@ function CustomerLoginForm() {
     setFormError(null);
     setLoading(true);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const validateRes = await fetch("/api/auth/check-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-    setLoading(false);
+      const validateData = await validateRes.json().catch(() => ({}));
 
-    if (result?.error) {
-      if (result.error === "EMAIL_NOT_VERIFIED") {
-        setFormError("Please verify your email before logging in. Check your inbox for a verification link.");
-        setShowResend(true);
-      } else {
+      if (!validateRes.ok || !validateData.success) {
+        setLoading(false);
+        if (validateData.error === "email_not_verified") {
+          setFormError("Please verify your email before logging in. Check your inbox for a verification link.");
+          setShowResend(true);
+        } else {
+          setFormError("Invalid email or password. Please try again.");
+          setShowResend(false);
+        }
+        return;
+      }
+
+      // Pre-validation succeeded, proceed with NextAuth sign-in
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+      });
+
+      setLoading(false);
+
+      if (result?.error) {
         setFormError("Invalid email or password. Please try again.");
         setShowResend(false);
+        return;
       }
-      return;
-    }
 
-    router.push("/");
+      router.push("/");
+    } catch (err) {
+      setLoading(false);
+      setFormError("An unexpected error occurred. Please try again.");
+      console.error("Login submission error:", err);
+    }
   }
 
   async function handleResend() {
