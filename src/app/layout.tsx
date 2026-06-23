@@ -30,13 +30,9 @@ export const metadata: Metadata = {
   keywords: ["sports equipment", "fitness gear", "cricket", "football", "gym", "Sri Lanka", "Highlanders"],
   authors: [{ name: "Highlanders Sports & Fitness" }],
   icons: {
-    icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.png", sizes: "512x512", type: "image/png" },
-      { url: "/favicon.ico", sizes: "any" },
-    ],
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
     apple: "/favicon.png",
-    shortcut: "/favicon.svg",
   },
   openGraph: {
     title: "Highlanders Sports & Fitness",
