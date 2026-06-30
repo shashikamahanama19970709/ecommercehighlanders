@@ -2,6 +2,15 @@
 
 import { useState } from "react";
 
+function formatOrderPrice(amount: number, order?: any) {
+  if (!order) return `$${amount.toFixed(2)}`;
+  const rate = order.currencyRate || 1.0;
+  const symbol = order.currencySymbol || '$';
+  const converted = amount * rate;
+  const space = symbol.length > 1 ? ' ' : '';
+  return `${symbol}${space}${converted.toFixed(2)}`;
+}
+
 export default function OrderLookupPage() {
   const [email, setEmail] = useState("");
   const [sessionId, setSessionId] = useState("");
@@ -69,13 +78,13 @@ export default function OrderLookupPage() {
           <div className="mb-1">Email: <span className="font-mono">{result.email}</span></div>
           <div className="mb-1">Session ID: <span className="font-mono">{result.stripeSessionId}</span></div>
           <div className="mb-1">Status: <b>{result.status}</b></div>
-          <div className="mb-1">Total: <b>£{result.totalUsd.toFixed(2)}</b></div>
+          <div className="mb-1">Total: <b>{formatOrderPrice(result.totalUsd, result)}</b></div>
           <div className="mb-1">Created: {new Date(result.createdAt).toLocaleString()}</div>
           <h3 className="mt-3 font-medium">Items</h3>
           <ul className="list-disc ml-6">
             {result.items.map((item: any) => (
               <li key={item.productId}>
-                {item.name} × {item.quantity} — £{item.priceUsd.toFixed(2)}
+                {item.name} × {item.quantity} — {formatOrderPrice(item.priceUsd, result)}
               </li>
             ))}
           </ul>

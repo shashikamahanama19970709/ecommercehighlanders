@@ -14,6 +14,8 @@ type CheckoutSessionDoc = {
   sandboxEnabled: boolean;
   email: string;
   currency: string;
+  currencyRate?: number;
+  currencySymbol?: string;
   items: OrderItemSnapshot[];
   totalUsd: number;
   shipping?: { label: string; cost: number } | null;
@@ -93,7 +95,48 @@ export async function POST(request: NextRequest) {
     const body = (await request.json().catch(() => null)) as CheckoutRequestBody | null;
 
     const email = typeof body?.email === 'string' ? body.email.trim() : '';
-    const currency = typeof body?.currency === 'string' && body.currency.trim() ? body.currency.trim().toLowerCase() : DEFAULT_CURRENCY;
+
+    // Fetch currency settings
+    const currencySettingsCol = await getCollection<any>('settings');
+    const currencySettings = await currencySettingsCol.findOne({ key: 'currency' });
+    const baseCurrency = currencySettings?.baseCurrency || 'USD';
+    const currencies = currencySettings?.currencies || [
+      { code: 'USD', symbol: '$', rate: 1.0 },
+      { code: 'GBP', symbol: '£', rate: 0.78 },
+      { code: 'EUR', symbol: '€', rate: 0.92 },
+      { code: 'LKR', symbol: 'Rs.', rate: 300.0 },
+      { code: 'CAD', symbol: 'C$', rate: 1.36 },
+      { code: 'AUD', symbol: 'A$', rate: 1.50 },
+      { code: 'JPY', symbol: '¥', rate: 155.0 },
+      { code: 'INR', symbol: '₹', rate: 83.5 },
+      { code: 'CNY', symbol: '元', rate: 7.25 },
+      { code: 'SGD', symbol: 'S$', rate: 1.35 },
+      { code: 'AED', symbol: 'DH', rate: 3.67 },
+      { code: 'NZD', symbol: 'NZ$', rate: 1.63 },
+      { code: 'CHF', symbol: 'Fr', rate: 0.90 },
+      { code: 'HKD', symbol: 'HK$', rate: 7.80 },
+      { code: 'SEK', symbol: 'kr', rate: 10.50 },
+      { code: 'ZAR', symbol: 'R', rate: 18.20 },
+      { code: 'RUB', symbol: '₽', rate: 90.00 },
+      { code: 'BRL', symbol: 'R$', rate: 5.30 },
+      { code: 'MXN', symbol: 'Mex$', rate: 18.00 },
+      { code: 'KRW', symbol: '₩', rate: 1380.00 },
+    ];
+
+    const reqCurrencyCode = (typeof body?.currency === 'string' && body.currency.trim()) 
+      ? body.currency.trim().toUpperCase() 
+      : baseCurrency;
+
+    const matchedCurrency = currencies.find((c: any) => c.code === reqCurrencyCode) || {
+      code: baseCurrency,
+      symbol: '$',
+      rate: 1.0
+    };
+
+    const currencySymbol = matchedCurrency.symbol || '$';
+    const currencyRate = matchedCurrency.rate || 1.0;
+    const currency = reqCurrencyCode.toLowerCase();
+
     const requestedItems = Array.isArray(body?.items) ? body!.items : [];
     const shipping = body?.shipping && typeof body.shipping.cost === 'number' ? body.shipping : null;
     const tax = body?.tax && typeof body.tax.amount === 'number' ? body.tax : null;
@@ -184,7 +227,7 @@ export async function POST(request: NextRequest) {
       price_data: {
         currency,
         product_data: { name: item.name },
-        unit_amount: Math.round(item.priceUsd * 100),
+        unit_amount: Math.round(item.priceUsd * currencyRate * 100),
       },
       quantity: item.quantity,
     }));
@@ -193,7 +236,7 @@ export async function POST(request: NextRequest) {
         price_data: {
           currency,
           product_data: { name: shipping.label || 'Shipping' },
-          unit_amount: Math.round(shipping.cost * 100),
+          unit_amount: Math.round(shipping.cost * currencyRate * 100),
         },
         quantity: 1,
       });
@@ -203,7 +246,7 @@ export async function POST(request: NextRequest) {
         price_data: {
           currency,
           product_data: { name: tax.label || 'Tax' },
-          unit_amount: Math.round(tax.amount * 100),
+          unit_amount: Math.round(tax.amount * currencyRate * 100),
         },
         quantity: 1,
       });
@@ -213,7 +256,7 @@ export async function POST(request: NextRequest) {
         price_data: {
           currency,
           product_data: { name: discount.label || 'Discount' },
-          unit_amount: -Math.round(Math.abs(discount.amount) * 100),
+          unit_amount: -Math.round(Math.abs(discount.amount) * currencyRate * 100),
         },
         quantity: 1,
       });
@@ -240,6 +283,8 @@ export async function POST(request: NextRequest) {
             sandboxEnabled,
             email,
             currency: currency.toUpperCase(),
+            currencyRate: Number(currencyRate),
+            currencySymbol: currencySymbol,
             items,
             totalUsd: Number(totalUsd),
             shipping,
@@ -258,6 +303,8 @@ export async function POST(request: NextRequest) {
         sandboxEnabled,
         email,
         currency: currency.toUpperCase(),
+        currencyRate: Number(currencyRate),
+        currencySymbol: currencySymbol,
         items,
         totalUsd: Number(totalUsd),
         shipping,

@@ -36,7 +36,8 @@ export function AdminHeader({
   const PageIcon = page.icon;
 
   const handleSignOut = async () => {
-    await signOut({ redirectTo: "/admin/login" });
+    await signOut({ redirect: false });
+    window.location.href = "/admin/login";
   };
 
   return (

@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { HeaderNav } from "@/components/header-nav";
+import { useCurrency } from "@/lib/currency-context";
 import type { ShopBySportModule } from "@/types/shop-by-sport";
 import type { Brand, Product, Sport } from "@/types/product";
 
@@ -98,6 +99,7 @@ function getSpecificationValues(product: Product, key: string): string[] {
 }
 
 function ShopBySportPageContent() {
+  const { formatPrice, convertPrice, selectedCurrency } = useCurrency();
   const searchParams = useSearchParams();
   const requestedSportId = searchParams.get('sportId') ?? '';
 
@@ -383,15 +385,15 @@ function ShopBySportPageContent() {
     // Price range filter
     if (priceMin) {
       const min = parseFloat(priceMin);
-      if (!isNaN(min)) list = list.filter((p) => Number(p.price) >= min);
+      if (!isNaN(min)) list = list.filter((p) => convertPrice(Number(p.price)) >= min);
     }
     if (priceMax) {
       const max = parseFloat(priceMax);
-      if (!isNaN(max)) list = list.filter((p) => Number(p.price) <= max);
+      if (!isNaN(max)) list = list.filter((p) => convertPrice(Number(p.price)) <= max);
     }
 
     return list;
-  }, [products, equipmentTypeFilter, brandFilterId, specificationKeys, specFilters, priceMin, priceMax]);
+  }, [products, equipmentTypeFilter, brandFilterId, specificationKeys, specFilters, priceMin, priceMax, convertPrice]);
 
   if (isLoading) {
     return (
@@ -603,15 +605,15 @@ function ShopBySportPageContent() {
 
                     {/* Price range filter with slider */}
                     <div className="space-y-1">
-                      <label className="text-[11px] font-medium text-muted-foreground">Price Range (£)</label>
+                      <label className="text-[11px] font-medium text-muted-foreground">Price Range ({selectedCurrency.symbol})</label>
                       <div className="flex flex-col gap-2">
                         <Slider
                           range
                           min={0}
-                          max={Math.max(1000, ...products.map(p => Number(p.price) || 0))}
+                          max={Math.max(1000, ...products.map(p => convertPrice(Number(p.price) || 0)))}
                           value={[
                             priceMin ? Number(priceMin) : 0,
-                            priceMax ? Number(priceMax) : Math.max(1000, ...products.map(p => Number(p.price) || 0))
+                            priceMax ? Number(priceMax) : Math.max(1000, ...products.map(p => convertPrice(Number(p.price) || 0)))
                           ]}
                           onChange={(value) => {
                             if (Array.isArray(value)) {
@@ -623,8 +625,8 @@ function ShopBySportPageContent() {
                           allowCross={false}
                         />
                         <div className="flex justify-between text-xs text-muted-foreground">
-                          <span>£{priceMin ? Number(priceMin) : 0}</span>
-                          <span>£{priceMax ? Number(priceMax) : Math.max(1000, ...products.map(p => Number(p.price) || 0))}</span>
+                          <span>{selectedCurrency.symbol}{priceMin ? Number(priceMin).toFixed(0) : 0}</span>
+                          <span>{selectedCurrency.symbol}{priceMax ? Number(priceMax).toFixed(0) : Math.max(1000, ...products.map(p => convertPrice(Number(p.price) || 0))).toFixed(0)}</span>
                         </div>
                       </div>
                     </div>
@@ -724,7 +726,7 @@ function ShopBySportPageContent() {
                             {model ? ` • ${model}` : ""}
                           </p>
                           <div className="flex items-center justify-between pt-2">
-                            <span className="text-sm font-semibold text-foreground">${Number(p.price ?? 0).toFixed(2)}</span>
+                            <span className="text-sm font-semibold text-foreground">{formatPrice(Number(p.price ?? 0))}</span>
                             <div className="flex items-center gap-2">
                               {isLockedToRequestedSport && (
                                 <span
@@ -835,7 +837,7 @@ function ShopBySportPageContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Price</p>
-                      <p className="mt-1 text-xl font-semibold text-foreground">${Number(activeProduct.price ?? 0).toFixed(2)}</p>
+                      <p className="mt-1 text-xl font-semibold text-foreground">{formatPrice(Number(activeProduct.price ?? 0))}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">Availability</p>

@@ -19,6 +19,8 @@ interface CheckoutSession {
   stripeSessionId: string;
   email: string;
   currency: string;
+  currencyRate?: number;
+  currencySymbol?: string;
   totalUsd: number;
   status: string;
   sandboxEnabled: boolean;
@@ -46,6 +48,15 @@ interface Order {
     updatedAt: string;
   };
   [key: string]: unknown;
+}
+
+function formatOrderPrice(amount: number, order?: any) {
+  if (!order) return `$${amount.toFixed(2)}`;
+  const rate = order.currencyRate || 1.0;
+  const symbol = order.currencySymbol || '£';
+  const converted = amount * rate;
+  const space = symbol.length > 1 ? ' ' : '';
+  return `${symbol}${space}${converted.toFixed(2)}`;
 }
 
 // Helpers for badges
@@ -220,7 +231,7 @@ export function CheckoutAdminPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className="font-mono font-bold text-[#0f1a2e] bg-slate-100 px-2 py-1 rounded">
-                        £{s.totalUsd.toFixed(2)}
+                        {formatOrderPrice(s.totalUsd, s)}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -376,9 +387,9 @@ export function CheckoutAdminPage() {
                     <tr key={idx} className="hover:bg-slate-50/20">
                       <td className="px-4 py-3 font-semibold text-slate-800">{item.name}</td>
                       <td className="px-4 py-3 text-center font-mono text-slate-600">{item.quantity}</td>
-                      <td className="px-4 py-3 text-right font-mono text-slate-600">£{item.priceUsd.toFixed(2)}</td>
+                      <td className="px-4 py-3 text-right font-mono text-slate-600">{formatOrderPrice(item.priceUsd, viewOrder)}</td>
                       <td className="px-4 py-3 text-right font-mono font-bold text-[#0f1a2e]">
-                        £{(item.priceUsd * item.quantity).toFixed(2)}
+                        {formatOrderPrice(item.priceUsd * item.quantity, viewOrder)}
                       </td>
                     </tr>
                   ))}

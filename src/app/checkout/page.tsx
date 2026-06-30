@@ -1,6 +1,7 @@
 'use client';
 
 import { useCart } from '@/lib/cart-context';
+import { useCurrency } from '@/lib/currency-context';
 import { useEffect, useState } from 'react';
 import { useUser } from '@/lib/use-user';
 import Image from 'next/image';
@@ -52,6 +53,7 @@ const inputCls =
 
 export default function CheckoutPage() {
   const { items, total, updateQuantity, removeFromCart } = useCart();
+  const { formatPrice, selectedCurrency } = useCurrency();
   const { user, loading: userLoading, authenticated } = useUser();
 
   const [isPlacingOrder, setIsPlacingOrder] = useState(false);
@@ -117,7 +119,7 @@ export default function CheckoutPage() {
     try {
       const payload = {
         email: finalEmail,
-        currency: 'gbp',
+        currency: selectedCurrency.code,
         items: items.map((i) => ({
           productId: String(i.product._id),
           quantity: i.quantity,
@@ -346,11 +348,11 @@ export default function CheckoutPage() {
                     {/* Price */}
                     <div className="shrink-0 text-right">
                       <p className="text-sm font-bold text-[#0f1a2e]">
-                        £{(item.product.price * item.quantity).toFixed(2)}
+                        {formatPrice(item.product.price * item.quantity)}
                       </p>
                       {item.quantity > 1 && (
                         <p className="text-xs text-[#94a3b8]">
-                          £{item.product.price.toFixed(2)} each
+                          {formatPrice(item.product.price)} each
                         </p>
                       )}
                     </div>
@@ -478,7 +480,7 @@ export default function CheckoutPage() {
                         {opt.cost === 0 ? (
                           <span className="text-emerald-600">Free</span>
                         ) : (
-                          `£${opt.cost.toFixed(2)}`
+                          formatPrice(opt.cost)
                         )}
                       </span>
                     </label>
@@ -526,7 +528,7 @@ export default function CheckoutPage() {
                     <span className="text-[#64748b]">
                       Subtotal ({items.length} item{items.length !== 1 ? 's' : ''})
                     </span>
-                    <span className="font-semibold text-[#0f1a2e]">£{subtotal.toFixed(2)}</span>
+                    <span className="font-semibold text-[#0f1a2e]">{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-[#64748b]">Shipping</span>
@@ -534,7 +536,7 @@ export default function CheckoutPage() {
                       {shippingCost === 0 ? (
                         <span className="text-emerald-600">Free</span>
                       ) : (
-                        `£${shippingCost.toFixed(2)}`
+                        formatPrice(shippingCost)
                       )}
                     </span>
                   </div>
@@ -543,14 +545,14 @@ export default function CheckoutPage() {
                       <span className="text-[#64748b]">
                         Tax ({(taxRate * 100).toFixed(0)}%)
                       </span>
-                      <span className="font-semibold text-[#0f1a2e]">£{tax.toFixed(2)}</span>
+                      <span className="font-semibold text-[#0f1a2e]">{formatPrice(tax)}</span>
                     </div>
                   )}
                   {discount > 0 && (
                     <div className="flex justify-between text-sm">
                       <span className="text-emerald-600">Discount</span>
                       <span className="font-semibold text-emerald-600">
-                        −£{discount.toFixed(2)}
+                        −{formatPrice(discount)}
                       </span>
                     </div>
                   )}
@@ -560,7 +562,7 @@ export default function CheckoutPage() {
                     <div className="flex justify-between">
                       <span className="text-base font-bold text-[#0f1a2e]">Total</span>
                       <span className="text-xl font-black text-[#0f1a2e]">
-                        £{finalTotal.toFixed(2)}
+                        {formatPrice(finalTotal)}
                       </span>
                     </div>
                     <p className="mt-0.5 text-right text-[10px] text-[#94a3b8]">
@@ -590,7 +592,7 @@ export default function CheckoutPage() {
                     ) : (
                       <span className="flex items-center justify-center gap-2">
                         <Lock className="h-4 w-4" />
-                        Place Order — £{finalTotal.toFixed(2)}
+                        Place Order — {formatPrice(finalTotal)}
                       </span>
                     )}
                   </button>

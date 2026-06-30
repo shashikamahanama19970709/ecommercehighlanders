@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 import { CartProvider } from "@/lib/cart-context";
+import { CurrencyProvider } from "@/lib/currency-context";
 import { AppFooter } from "@/components/app-footer";
 
 const inter = Inter({
@@ -62,9 +63,11 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <CartProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </CartProvider>
+          <AuthProvider>
+            <CurrencyProvider>
+              <CartProvider>{children}</CartProvider>
+            </CurrencyProvider>
+          </AuthProvider>
         </ThemeProvider>
         <AppFooter />
       </body>

@@ -19,6 +19,8 @@ export interface Order {
   userId?: string | null;
   email: string;
   currency: string; // e.g. USD, EUR, LKR
+  currencyRate?: number;
+  currencySymbol?: string;
   items: OrderItemSnapshot[];
   totalUsd: number;
   status: OrderStatus;

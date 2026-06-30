@@ -14,6 +14,15 @@ type ConfirmState =
   | { status: 'confirmed'; orderId?: string; order?: Order }
   | { status: 'error'; message: string };
 
+function formatOrderPrice(amount: number, order?: any) {
+  if (!order) return `$${amount.toFixed(2)}`;
+  const rate = order.currencyRate || 1.0;
+  const symbol = order.currencySymbol || '$';
+  const converted = amount * rate;
+  const space = symbol.length > 1 ? ' ' : '';
+  return `${symbol}${space}${converted.toFixed(2)}`;
+}
+
 type ConfirmResponse = {
   status?: 'pending' | 'confirmed' | 'failed';
   orderId?: string;
@@ -143,7 +152,7 @@ export function OrderConfirmationClient() {
                     <li key={`${item.name}-${i}`}>
                       {item.name} × {item.quantity}
                       <span className="float-right">
-                        £{(item.priceUsd * item.quantity).toFixed(2)}
+                        {formatOrderPrice(item.priceUsd * item.quantity, state.order)}
                       </span>
                     </li>
                   ))}
@@ -151,7 +160,7 @@ export function OrderConfirmationClient() {
                     <li>
                       Shipping:
                       <span className="float-right">
-                        £{state.order.shipping.cost.toFixed(2)}{' '}
+                        {formatOrderPrice(state.order.shipping.cost, state.order)}{' '}
                         <span className="text-xs">({state.order.shipping.label})</span>
                       </span>
                     </li>
@@ -160,7 +169,7 @@ export function OrderConfirmationClient() {
                     <li>
                       Tax:
                       <span className="float-right">
-                        £{state.order.tax.amount.toFixed(2)}{' '}
+                        {formatOrderPrice(state.order.tax.amount, state.order)}{' '}
                         <span className="text-xs">({state.order.tax.label})</span>
                       </span>
                     </li>
@@ -169,14 +178,14 @@ export function OrderConfirmationClient() {
                     <li>
                       Discount:
                       <span className="float-right">
-                        -£{state.order.discount.amount.toFixed(2)}{' '}
+                        -{formatOrderPrice(state.order.discount.amount, state.order)}{' '}
                         <span className="text-xs">({state.order.discount.label})</span>
                       </span>
                     </li>
                   )}
                   <li className="font-semibold border-t pt-2 mt-2">
                     Total:
-                    <span className="float-right">£{state.order.totalUsd.toFixed(2)}</span>
+                    <span className="float-right">{formatOrderPrice(state.order.totalUsd, state.order)}</span>
                   </li>
                 </ul>
               </div>

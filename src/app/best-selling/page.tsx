@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { HeaderNav } from "@/components/header-nav";
+import { useCurrency } from "@/lib/currency-context";
 import type { Brand, Product, Sport } from "@/types/product";
 import { Sparkles, Search, ShoppingBag, X } from "lucide-react";
 
@@ -85,6 +86,7 @@ function toFilterStrings(value: unknown): string[] {
 }
 
 function BestSellingPageContent() {
+  const { formatPrice, selectedCurrency } = useCurrency();
   const [sports, setSports] = useState<Sport[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedSportId, setSelectedSportId] = useState<string>("all");
@@ -430,8 +432,8 @@ function BestSellingPageContent() {
                           <p className="truncate text-xs font-semibold text-slate-500">{modelLabel}</p>
                           <div className="flex items-center justify-between gap-3 pt-2 mt-auto">
                             <span className="text-sm font-black text-[#0f1a2e]">
-                              £{price.toFixed(2)}
-                              <span className="ml-1 text-[10px] text-slate-400 font-semibold">GBP</span>
+                              {formatPrice(price)}
+                              <span className="ml-1 text-[10px] text-slate-400 font-semibold">{selectedCurrency.code}</span>
                             </span>
                             <span
                               className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
@@ -526,9 +528,9 @@ function BestSellingPageContent() {
                 <div className="rounded-2xl bg-slate-50 p-5 space-y-4 border border-slate-100">
                   <div className="flex items-baseline gap-2">
                     <span className="text-2xl font-black text-[#0f1a2e]">
-                      £{Number(activeProduct.price ?? 0).toFixed(2)}
+                      {formatPrice(Number(activeProduct.price ?? 0))}
                     </span>
-                    <span className="text-xs font-semibold text-slate-400">GBP</span>
+                    <span className="text-xs font-semibold text-slate-400">{selectedCurrency.code}</span>
                   </div>
 
                   <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">

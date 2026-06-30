@@ -15,6 +15,8 @@ interface CheckoutSession {
   stripeSessionId: string;
   email: string;
   currency: string;
+  currencyRate?: number;
+  currencySymbol?: string;
   totalUsd: number;
   status: string;
   sandboxEnabled: boolean;
@@ -24,6 +26,14 @@ interface CheckoutSession {
   orderId?: string;
 }
 
+
+function formatSessionPrice(amount: number, session: any) {
+  const rate = session.currencyRate || 1.0;
+  const symbol = session.currencySymbol || '£';
+  const converted = amount * rate;
+  const space = symbol.length > 1 ? ' ' : '';
+  return `${symbol}${space}${converted.toFixed(2)}`;
+}
 
 export function CheckoutSessionDetail({ id }: { id: string }) {
   const [session, setSession] = useState<CheckoutSession | null>(null);
@@ -86,7 +96,7 @@ export function CheckoutSessionDetail({ id }: { id: string }) {
       <h1 className="text-2xl font-bold mb-2">Checkout Session Detail</h1>
       <div className="mb-4 text-sm text-muted-foreground">Session ID: <span className="font-mono">{session.stripeSessionId}</span></div>
       <div className="mb-2">Email: <span className="font-mono">{session.email}</span></div>
-      <div className="mb-2">Total: <b>£{session.totalUsd.toFixed(2)}</b> GBP</div>
+      <div className="mb-2">Total: <b>{formatSessionPrice(session.totalUsd, session)}</b> {(session as any).currency || 'GBP'}</div>
       <div className="mb-2">Status: <b>{session.status}</b></div>
       <div className="mb-2">Sandbox: {session.sandboxEnabled ? "Yes" : "No"}</div>
       <div className="mb-2">Created: {new Date(session.createdAt).toLocaleString()}</div>
@@ -103,8 +113,8 @@ export function CheckoutSessionDetail({ id }: { id: string }) {
             <tr className="bg-muted">
               <th className="p-2 border">Product</th>
               <th className="p-2 border">Quantity</th>
-              <th className="p-2 border">Price (£)</th>
-              <th className="p-2 border">Subtotal (£)</th>
+              <th className="p-2 border">Price ({(session as any).currencySymbol || '$'})</th>
+              <th className="p-2 border">Subtotal ({(session as any).currencySymbol || '$'})</th>
             </tr>
           </thead>
           <tbody>
@@ -112,8 +122,8 @@ export function CheckoutSessionDetail({ id }: { id: string }) {
               <tr key={item.productId}>
                 <td className="p-2 border">{item.name}</td>
                 <td className="p-2 border">{item.quantity}</td>
-                <td className="p-2 border">£{item.priceUsd.toFixed(2)}</td>
-                <td className="p-2 border">£{(item.priceUsd * item.quantity).toFixed(2)}</td>
+                <td className="p-2 border">{formatSessionPrice(item.priceUsd, session)}</td>
+                <td className="p-2 border">{formatSessionPrice(item.priceUsd * item.quantity, session)}</td>
               </tr>
             ))}
           </tbody>

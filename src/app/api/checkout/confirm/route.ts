@@ -131,10 +131,12 @@ export async function GET(request: NextRequest) {
     }
 
     const now = new Date().toISOString();
-    const order: Order = {
+    const order = {
       email: checkoutDoc.email,
       userId: null,
       currency: checkoutDoc.currency,
+      currencyRate: (checkoutDoc as any).currencyRate ?? 1.0,
+      currencySymbol: (checkoutDoc as any).currencySymbol ?? '$',
       items: checkoutDoc.items,
       totalUsd: checkoutDoc.totalUsd,
       status: 'paid',

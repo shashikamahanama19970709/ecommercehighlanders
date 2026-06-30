@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart } from 'lucide-react';
 import { AddToCartButton } from '@/components/add-to-cart-button';
+import { useCurrency } from '@/lib/currency-context';
 import type { ShopBySportEntry, ShopBySportModule } from '@/types/shop-by-sport';
 import type { Product } from '@/types/product';
 
@@ -42,6 +43,7 @@ type Props = {
 };
 
 export function ShopBySportLandingSection({ moduleDoc }: Props) {
+  const { formatPrice, selectedCurrency } = useCurrency();
   const entries = useMemo(() => {
     return Array.isArray(moduleDoc?.entries) ? moduleDoc!.entries : [];
   }, [moduleDoc]);
@@ -205,8 +207,8 @@ export function ShopBySportLandingSection({ moduleDoc }: Props) {
                     <p className="truncate text-[12px] font-medium text-foreground/70">{modelLabel}</p>
                     <div className="flex items-center justify-between gap-3 text-xs">
                       <div className="text-sm font-semibold text-foreground">
-                        {price !== undefined ? `£${price.toFixed(2)}` : '—'}
-                        <span className="ml-1 text-[10px] text-muted-foreground">GBP</span>
+                        {price !== undefined ? formatPrice(price) : '—'}
+                        <span className="ml-1 text-[10px] text-muted-foreground">{selectedCurrency.code}</span>
                       </div>
                       <span
                         className={

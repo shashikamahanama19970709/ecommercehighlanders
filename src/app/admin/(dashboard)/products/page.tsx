@@ -57,6 +57,9 @@ export default function AdminProductsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  const [baseCurrency, setBaseCurrency] = useState('USD');
+  const [currencySymbol, setCurrencySymbol] = useState('$');
+
   const { control, handleSubmit, watch, reset, setValue, clearErrors, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(baseSchema),
     defaultValues: {
@@ -79,7 +82,23 @@ export default function AdminProductsPage() {
   useEffect(() => {
     fetchSports();
     fetchProducts();
+    fetchCurrencySettings();
   }, []);
+
+  const fetchCurrencySettings = async () => {
+    try {
+      const response = await fetch('/api/settings/currency');
+      const data = await response.json();
+      const base = data.baseCurrency || 'USD';
+      const currencies = data.currencies || [];
+      const match = currencies.find((c: any) => c.code === base) || { symbol: '$' };
+      setBaseCurrency(base);
+      setCurrencySymbol(match.symbol || '$');
+    } catch {
+      setBaseCurrency('USD');
+      setCurrencySymbol('$');
+    }
+  };
 
   const fetchSports = async () => {
     const response = await fetch('/api/sports');
@@ -833,8 +852,8 @@ export default function AdminProductsPage() {
                         </p>
                         <div className="flex items-center justify-between pt-3 border-t border-slate-50">
                           <div className="text-sm font-black text-[#0f1a2e]">
-                            ${Number(p.price ?? 0).toFixed(2)}
-                            <span className="ml-1 text-[9px] font-bold text-slate-400">USD</span>
+                            {currencySymbol}{Number(p.price ?? 0).toFixed(2)}
+                            <span className="ml-1 text-[9px] font-bold text-slate-400">{baseCurrency}</span>
                           </div>
                           <div className="flex items-center gap-1.5">
                             <button
@@ -1020,7 +1039,7 @@ export default function AdminProductsPage() {
                         control={control}
                         render={({ field }) => (
                           <div className="space-y-1.5">
-                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Price ($)</label>
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Price ({currencySymbol})</label>
                             <input
                               {...field}
                               type="number"

@@ -4,12 +4,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRef, useState, useEffect } from 'react';
 import { useCart } from '@/lib/cart-context';
-import { ShoppingCart, Menu, X, ChevronDown } from 'lucide-react';
+import { useCurrency } from '@/lib/currency-context';
+import { ShoppingCart, Menu, X, ChevronDown, Globe } from 'lucide-react';
+import { CurrencyDropdown } from './currency-dropdown';
 
 export function HeaderNav() {
   const pathname = usePathname();
   const detailsRef = useRef<HTMLDetailsElement | null>(null);
   const { items } = useCart();
+  const { currencies, selectedCurrency, changeCurrency } = useCurrency();
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -32,7 +35,6 @@ export function HeaderNav() {
   };
 
   const navLinks = [
-    { label: 'Shop', href: '#catalog' },
     { label: 'Shop by Sport', href: '/shop-by-sport' },
     { label: 'Best Selling', href: '/best-selling' },
     { label: 'About Us', href: '/about' },
@@ -62,6 +64,9 @@ export function HeaderNav() {
             )}
           </Link>
         ))}
+
+        {/* Currency Selector */}
+        <CurrencyDropdown align="right" className="ml-2" />
 
         {/* Cart */}
         <Link
@@ -183,6 +188,9 @@ export function HeaderNav() {
                   </span>
                 )}
               </Link>
+
+              {/* Currency Mobile */}
+              <CurrencyDropdown isMobile={true} />
             </nav>
 
             {/* CTA Button */}

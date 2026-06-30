@@ -7,7 +7,7 @@ import type { ShopBySportModule } from '@/types/shop-by-sport';
 import type { LandingHeroBannerModule } from '@/types/landing-hero-banner';
 import { NoticeBanner, type Notice } from '@/components/notice-banner';
 
-type ModuleName = 'about-us' | 'shop-by-sport' | 'hero-banner';
+type ModuleName = 'about-us' | 'shop-by-sport' | 'hero-banner' | 'currency';
 
 type AboutUsPayload = {
   title: string;
@@ -60,6 +60,29 @@ async function uploadImage(file: File) {
   };
 }
 
+const CURRENCY_METADATA = [
+  { code: 'USD', name: 'US Dollar', symbol: '$' },
+  { code: 'GBP', name: 'British Pound', symbol: '£' },
+  { code: 'EUR', name: 'Euro', symbol: '€' },
+  { code: 'LKR', name: 'Sri Lankan Rupee', symbol: 'Rs.' },
+  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
+  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
+  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
+  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
+  { code: 'CNY', name: 'Chinese Yuan', symbol: '元' },
+  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
+  { code: 'AED', name: 'UAE Dirham', symbol: 'DH' },
+  { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
+  { code: 'CHF', name: 'Swiss Franc', symbol: 'Fr' },
+  { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
+  { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
+  { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
+  { code: 'RUB', name: 'Russian Ruble', symbol: '₽' },
+  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
+  { code: 'MXN', name: 'Mexican Peso', symbol: 'Mex$' },
+  { code: 'KRW', name: 'South Korean Won', symbol: '₩' },
+];
+
 export default function AdminLandingPage() {
   const [openModule, setOpenModule] = useState<ModuleName | null>('about-us');
   const [notice, setNotice] = useState<Notice>(null);
@@ -67,6 +90,10 @@ export default function AdminLandingPage() {
   const [isSavingSandbox, setIsSavingSandbox] = useState(false);
   const [isSavingAbout, setIsSavingAbout] = useState(false);
   const [form, setForm] = useState<AboutUsPayload>({ title: '', description: '' });
+
+  const [baseCurrency, setBaseCurrency] = useState('USD');
+  const [currencyRates, setCurrencyRates] = useState<Record<string, number>>({ USD: 1.0, GBP: 0.78, EUR: 0.92, LKR: 300 });
+  const [isSavingCurrency, setIsSavingCurrency] = useState(false);
 
   const [sports, setSports] = useState<Sport[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -100,6 +127,24 @@ export default function AdminLandingPage() {
     })();
 
     (async () => {
+      try {
+        const res = await fetch('/api/settings/currency', { cache: 'no-store' });
+        if (!res.ok) return;
+        const out = await res.json();
+        if (out.baseCurrency) setBaseCurrency(out.baseCurrency);
+        if (Array.isArray(out.currencies)) {
+          const ratesObj: Record<string, number> = {};
+          out.currencies.forEach((c: any) => {
+            ratesObj[c.code] = c.rate;
+          });
+          setCurrencyRates(ratesObj);
+        }
+      } catch {
+        // Ignore settings load errors.
+      }
+    })();
+
+    (async () => {
       const res = await fetch('/api/landing/about-us', { cache: 'no-store' });
       if (!res.ok) return;
       const data = (await res.json()) as AboutUsPayload | null;
@@ -114,6 +159,38 @@ export default function AdminLandingPage() {
       });
     })();
   }, []);
+
+  const saveCurrencySetting = async () => {
+    setIsSavingCurrency(true);
+    try {
+      const currenciesPayload = CURRENCY_METADATA.map((meta) => ({
+        code: meta.code,
+        symbol: meta.symbol,
+        rate: baseCurrency === meta.code ? 1.0 : Number(currencyRates[meta.code]) || 1.0,
+      }));
+      
+      const res = await fetch('/api/settings/currency', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ baseCurrency, currencies: currenciesPayload }),
+      });
+
+      if (!res.ok) {
+        const out = await res.json().catch(() => ({}));
+        setNotice({ type: 'error', message: out?.message ?? 'Currency settings update failed.' });
+        return;
+      }
+
+      setNotice({
+        type: 'success',
+        message: 'Currency settings updated successfully.',
+      });
+    } catch {
+      setNotice({ type: 'error', message: 'Currency settings update failed.' });
+    } finally {
+      setIsSavingCurrency(false);
+    }
+  };
 
   const saveSandboxSetting = async (next: boolean) => {
     setIsSavingSandbox(true);
@@ -642,6 +719,88 @@ export default function AdminLandingPage() {
       </div>
 
       <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
+
+      <div className="rounded-2xl border bg-background mb-4">
+        <button
+          type="button"
+          onClick={() => toggleModule('currency')}
+          aria-expanded={openModule === 'currency'}
+          className="flex w-full items-center gap-3 px-5 py-4 text-left"
+        >
+          <span className="text-base font-semibold text-foreground">{openModule === 'currency' ? '−' : '+'}</span>
+          <span className="text-base font-semibold text-foreground">Store Currency Settings</span>
+        </button>
+
+        {openModule === 'currency' && (
+          <div className="space-y-6 border-t p-5">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Configure Currency and Exchange Rates</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Define the store's primary base currency. Product prices entered in the catalog are assumed to be in this currency.
+                Set exchange rates relative to the base currency (base currency rate is always 1.0).
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground">Catalog Base Currency</label>
+                <select
+                  value={baseCurrency}
+                  onChange={(e) => {
+                    const nextBase = e.target.value;
+                    setBaseCurrency(nextBase);
+                    setCurrencyRates(prev => ({
+                      ...prev,
+                      [nextBase]: 1.0
+                    }));
+                  }}
+                  className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm font-medium"
+                >
+                  {CURRENCY_METADATA.map(meta => (
+                    <option key={meta.code} value={meta.code}>
+                      {meta.code} ({meta.symbol} - {meta.name})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-3 border-t">
+              <h3 className="text-sm font-semibold text-foreground">Exchange Rates (Relative to {baseCurrency})</h3>
+              
+              <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 max-h-96 overflow-y-auto p-1 border rounded-lg bg-[#f8fafc]/50">
+                {CURRENCY_METADATA.map((meta) => (
+                  <div key={meta.code} className="space-y-1.5 p-3 rounded-xl border bg-white shadow-sm">
+                    <label className="text-xs font-bold text-slate-500">{meta.code} Rate ({meta.symbol})</label>
+                    <input
+                      type="number"
+                      step="0.00001"
+                      disabled={baseCurrency === meta.code}
+                      value={baseCurrency === meta.code ? 1.0 : (currencyRates[meta.code] !== undefined ? currencyRates[meta.code] : 1.0)}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setCurrencyRates(prev => ({ ...prev, [meta.code]: isNaN(val) ? 0 : val }));
+                      }}
+                      className="h-10 w-full rounded-md border border-border bg-background px-3 text-sm font-semibold disabled:bg-slate-100 disabled:text-slate-500"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-3 border-t">
+              <button
+                type="button"
+                onClick={saveCurrencySetting}
+                disabled={isSavingCurrency}
+                className="rounded-full bg-foreground px-5 py-2 text-sm font-medium text-background hover:bg-foreground/90 disabled:opacity-60"
+              >
+                {isSavingCurrency ? 'Saving...' : 'Save Currency Settings'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="rounded-2xl border bg-background">
         <button
