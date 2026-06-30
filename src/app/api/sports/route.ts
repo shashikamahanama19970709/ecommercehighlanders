@@ -5,6 +5,9 @@ import { connectToDatabase } from '@/lib/mongodb';
 import '@/lib/models'; // Import all models to ensure registration
 import Sport from '@/lib/models/Sport';
 
+// Prevent Next.js from attempting to statically render this route during build.
+export const dynamic = 'force-dynamic';
+
 const b2Endpoint = process.env.B2_ENDPOINT;
 const b2Bucket = process.env.B2_BUCKET_NAME;
 const b2Region = process.env.B2_REGION || "us-west-002";
@@ -29,7 +32,7 @@ export async function GET() {
   try {
     await connectToDatabase();
 
-    const sports = await Sport.find().sort({ name: 1 });
+    const sports = await Sport.find().sort({ name: 1 }).maxTimeMS(8000);
 
     // Generate signed URLs for images
     if (s3Client) {
