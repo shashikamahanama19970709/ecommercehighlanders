@@ -3,6 +3,8 @@ import Stripe from 'stripe';
 import { ObjectId } from 'mongodb';
 import { getCollection } from '@/lib/mongodb';
 import type { Order, OrderItemSnapshot } from '@/types/order';
+import { sendMail } from '@/lib/email';
+import { getCustomerInvoiceTemplate, getAdminAlertTemplate } from '@/lib/email-templates';
 
 type PaymentSettingsDoc = {
   key: 'payment';
@@ -150,6 +152,111 @@ export async function GET(request: NextRequest) {
 
     const insert = await ordersCol.insertOne(order as any);
     const orderId = insert.insertedId.toString();
+
+    // Helper to format currency pricing in the text receipt
+    const formatReceiptPrice = (amount: number, rate: number, symbol: string) => {
+      const converted = amount * rate;
+      const space = symbol.length > 1 ? ' ' : '';
+      return `${symbol}${space}${converted.toFixed(2)}`;
+    };
+
+    // Helper to generate a clean, professional text receipt
+    const generateTextReceipt = (ord: any, id: string): string => {
+      const r = ord.currencyRate || 1.0;
+      const s = ord.currencySymbol || '$';
+      const formattedSubtotal = formatReceiptPrice(
+        ord.items.reduce((sum: number, item: any) => sum + item.priceUsd * item.quantity, 0),
+        r,
+        s
+      );
+      const formattedShipping = ord.shipping ? formatReceiptPrice(ord.shipping.cost, r, s) : 'Free';
+      const formattedTax = ord.tax ? formatReceiptPrice(ord.tax.amount, r, s) : '0.00';
+      const formattedDiscount = ord.discount ? formatReceiptPrice(ord.discount.amount, r, s) : '0.00';
+      const formattedTotal = formatReceiptPrice(ord.totalUsd, r, s);
+
+      const divider = "==================================================";
+      const itemDivider = "--------------------------------------------------";
+
+      let textContent = `${divider}\n`;
+      textContent += `          HIGHLANDERS SPORTS & FITNESS\n`;
+      textContent += `                ORDER RECEIPT\n`;
+      textContent += `${divider}\n`;
+      textContent += `Invoice Reference: #${id.toUpperCase()}\n`;
+      textContent += `Date: ${new Date(ord.createdAt || Date.now()).toLocaleString()}\n`;
+      textContent += `Customer: ${ord.email}\n`;
+      if (ord.stripeSessionId) {
+        textContent += `Stripe Reference: ${ord.stripeSessionId}\n`;
+      }
+      textContent += `${divider}\n\n`;
+      
+      textContent += `ITEMS PURCHASED:\n`;
+      textContent += `${itemDivider}\n`;
+      
+      ord.items.forEach((item: any) => {
+        const itemPrice = formatReceiptPrice(item.priceUsd, r, s);
+        const itemTotal = formatReceiptPrice(item.priceUsd * item.quantity, r, s);
+        textContent += `${item.name}\n`;
+        textContent += `  Qty: ${item.quantity} x ${itemPrice} = ${itemTotal}\n`;
+        textContent += `${itemDivider}\n`;
+      });
+      textContent += `\n`;
+      
+      textContent += `COST SUMMARY:\n`;
+      textContent += `${itemDivider}\n`;
+      textContent += `Subtotal:               ${formattedSubtotal}\n`;
+      textContent += `Shipping:               ${formattedShipping}\n`;
+      textContent += `Taxes:                  ${formattedTax}\n`;
+      if (ord.discount) {
+        textContent += `Discount:              -${formattedDiscount}\n`;
+      }
+      textContent += `${itemDivider}\n`;
+      textContent += `GRAND TOTAL:            ${formattedTotal}\n`;
+      textContent += `${divider}\n\n`;
+      textContent += `Thank you for training with Highlanders Sports & Fitness!\n`;
+      textContent += `For support, contact support@highlandersfitness.store or +44 7491807132.\n`;
+      textContent += `${divider}\n`;
+      
+      return textContent;
+    };
+
+    // Send customer invoice and admin alert asynchronously without blocking the checkout confirm response
+    try {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const orderWithId = { ...order, _id: orderId };
+      const invoiceRef = orderId.slice(-6).toUpperCase();
+
+      // 1. Send Customer Invoice (with attachment receipts)
+      await sendMail({
+        to: order.email,
+        subject: `Your order confirmation - Invoice #${invoiceRef}`,
+        html: getCustomerInvoiceTemplate(orderWithId),
+        fromKey: 'orders',
+        attachments: [
+          {
+            filename: `invoice-${invoiceRef}.html`,
+            content: getCustomerInvoiceTemplate(orderWithId),
+            contentType: 'text/html',
+          },
+          {
+            filename: `receipt-${invoiceRef}.txt`,
+            content: generateTextReceipt(order, orderId),
+            contentType: 'text/plain',
+          }
+        ]
+      }).catch(err => console.error('Failed to send invoice to customer:', err));
+
+      // 2. Send Admin Alert
+      const adminEmail = process.env.ADMIN_EMAIL || 'info@highlandersfitness.store';
+      const adminViewUrl = `${appUrl}/admin/checkout/${orderId}`;
+      await sendMail({
+        to: adminEmail,
+        subject: `[New Order Alert] - Invoice #${invoiceRef}`,
+        html: getAdminAlertTemplate(orderWithId, adminViewUrl),
+        fromKey: 'info',
+      }).catch(err => console.error('Failed to send admin notification:', err));
+    } catch (emailErr) {
+      console.error('Error during post-checkout email processing:', emailErr);
+    }
 
     await checkoutCol.updateOne(
       { stripeSessionId: sessionId } as any,

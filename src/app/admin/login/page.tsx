@@ -27,15 +27,19 @@ function AdminLoginForm() {
     const result = await signIn("credentials", {
       email,
       password,
+      loginType: "admin",
       redirect: false,
     });
 
     setLoading(false);
 
     if (result?.error) {
-      if (result.error === "EMAIL_NOT_VERIFIED") {
+      if (result.error.includes("EMAIL_NOT_VERIFIED")) {
         setFormError("Please verify your email before logging in. Check your inbox.");
         setShowResend(true);
+      } else if (result.error.includes("ADMIN_ACCESS_ONLY")) {
+        setFormError("Access denied. This portal is restricted to administrators only.");
+        setShowResend(false);
       } else {
         setFormError("Invalid email or password. Please try again.");
         setShowResend(false);
@@ -243,9 +247,17 @@ function AdminLoginForm() {
 
             {/* Password */}
             <div className="space-y-1.5">
-              <label htmlFor="password" className="block text-sm font-semibold text-[#0f1a2e]">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-semibold text-[#0f1a2e]">
+                  Password
+                </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-bold text-[#1e3a5f] hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
               <div className="relative">
                 <input
                   id="password"

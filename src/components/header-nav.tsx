@@ -3,9 +3,10 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useRef, useState, useEffect } from 'react';
+import { useSession, signOut } from 'next-auth/react';
 import { useCart } from '@/lib/cart-context';
 import { useCurrency } from '@/lib/currency-context';
-import { ShoppingCart, Menu, X, ChevronDown, Globe } from 'lucide-react';
+import { ShoppingCart, Menu, X, ChevronDown, Globe, LogOut, LayoutDashboard, History } from 'lucide-react';
 import { CurrencyDropdown } from './currency-dropdown';
 
 export function HeaderNav() {
@@ -14,6 +15,9 @@ export function HeaderNav() {
   const { items } = useCart();
   const { currencies, selectedCurrency, changeCurrency } = useCurrency();
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const { data: session } = useSession();
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -23,6 +27,19 @@ export function HeaderNav() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [dropdownOpen]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -85,20 +102,87 @@ export function HeaderNav() {
           <span>Cart</span>
         </Link>
 
-        {/* Customer Login Button */}
-        <Link
-          href="/login"
-          className={`
-            ml-1 inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold
-            transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f] focus-visible:ring-offset-2
-            ${isActive('/login')
-              ? 'bg-[#0f1a2e] text-white shadow-md'
-              : 'border-2 border-[#0f1a2e] text-[#0f1a2e] hover:bg-[#0f1a2e] hover:text-white'
-            }
-          `}
-        >
-          Sign In
-        </Link>
+        {/* Customer Login Button & Profile Menu */}
+        {session?.user ? (
+          <div className="relative ml-2" ref={dropdownRef}>
+            <button
+              type="button"
+              onClick={() => setDropdownOpen((v) => !v)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-tr from-[#1e3a5f] to-[#0f1a2e] text-white font-bold text-sm border border-[#dde4ee] shadow-sm hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-[#1e3a5f]"
+              aria-label="User menu"
+            >
+              {session.user.image ? (
+                <img src={session.user.image} alt="User Avatar" className="h-full w-full rounded-full object-cover" />
+              ) : (
+                <span>{(session.user.name || session.user.email || 'U')[0].toUpperCase()}</span>
+              )}
+            </button>
+
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2.5 w-60 rounded-2xl border border-[#dde4ee] bg-white p-4 shadow-xl z-50 animate-fade-in-up">
+                <div className="border-b border-[#dde4ee] pb-3 mb-3 text-left">
+                  <p className="text-sm font-bold text-[#0f1a2e] truncate">{session.user.name || 'User'}</p>
+                  <p className="text-xs text-[#64748b] truncate">{session.user.email}</p>
+                  <span className="mt-1.5 inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase text-amber-700 tracking-wider">
+                    {(session.user as any).role || 'Customer'}
+                  </span>
+                </div>
+
+                <div className="flex flex-col gap-1 text-left">
+                  {/* If admin, show Admin Dashboard link */}
+                  {(session.user as any).role === 'admin' && (
+                    <Link
+                      href="/admin"
+                      onClick={() => setDropdownOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#0f1a2e] hover:bg-[#f0f4f8] transition-colors"
+                    >
+                      <LayoutDashboard className="h-3.5 w-3.5" />
+                      Admin Dashboard
+                    </Link>
+                  )}
+                  
+                  {/* Order History Link */}
+                  <Link
+                    href="/order-lookup"
+                    onClick={() => setDropdownOpen(false)}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold text-[#0f1a2e] hover:bg-[#f0f4f8] transition-colors"
+                  >
+                    <History className="h-3.5 w-3.5" />
+                    My Orders
+                  </Link>
+
+                  {/* Sign Out */}
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      setDropdownOpen(false);
+                      await signOut({ redirect: false });
+                      window.location.href = '/';
+                    }}
+                    className="mt-2 flex w-full items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100 transition-colors text-left"
+                  >
+                    <LogOut className="h-3.5 w-3.5" />
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            className={`
+              ml-1 inline-flex items-center gap-1.5 rounded-full px-5 py-2 text-sm font-semibold
+              transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f] focus-visible:ring-offset-2
+              ${isActive('/login')
+                ? 'bg-[#0f1a2e] text-white shadow-md'
+                : 'border-2 border-[#0f1a2e] text-[#0f1a2e] hover:bg-[#0f1a2e] hover:text-white'
+              }
+            `}
+          >
+            Sign In
+          </Link>
+        )}
       </nav>
 
       {/* Mobile: Cart + Hamburger */}
@@ -193,15 +277,71 @@ export function HeaderNav() {
               <CurrencyDropdown isMobile={true} />
             </nav>
 
-            {/* CTA Button */}
+            {/* Mobile Authentication / Profile Section */}
             <div className="mt-4 border-t border-[#dde4ee] pt-4">
-              <Link
-                href="/login"
-                onClick={() => setMobileOpen(false)}
-                className="flex w-full items-center justify-center rounded-xl bg-[#0f1a2e] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1e3a5f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f] focus-visible:ring-offset-2"
-              >
-                Customer Sign In
-              </Link>
+              {session?.user ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3 rounded-xl bg-[#f8fafc] p-3 text-left">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-[#1e3a5f] to-[#0f1a2e] text-white font-bold text-sm">
+                      {session.user.image ? (
+                        <img src={session.user.image} alt="Avatar" className="h-full w-full rounded-full object-cover" />
+                      ) : (
+                        <span>{(session.user.name || session.user.email || 'U')[0].toUpperCase()}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 text-left">
+                      <p className="text-sm font-bold text-[#0f1a2e] truncate">{session.user.name || 'User'}</p>
+                      <p className="text-xs text-[#64748b] truncate">{session.user.email}</p>
+                      <span className="mt-0.5 inline-block rounded bg-amber-50 px-1.5 py-0.5 text-[8px] font-bold uppercase text-amber-700">
+                        {(session.user as any).role || 'Customer'}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    {(session.user as any).role === 'admin' && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setMobileOpen(false)}
+                        className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-[#0f1a2e] hover:bg-[#f0f4f8] transition-colors"
+                      >
+                        <LayoutDashboard className="h-3.5 w-3.5" />
+                        Admin Dashboard
+                      </Link>
+                    )}
+
+                    <Link
+                      href="/order-lookup"
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold text-[#0f1a2e] hover:bg-[#f0f4f8] transition-colors"
+                    >
+                      <History className="h-3.5 w-3.5" />
+                      My Orders
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setMobileOpen(false);
+                        await signOut({ redirect: false });
+                        window.location.href = '/';
+                      }}
+                      className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-50 border border-red-100 py-3 text-sm font-bold text-red-600 hover:bg-red-100 transition-colors"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="flex w-full items-center justify-center rounded-xl bg-[#0f1a2e] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#1e3a5f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f] focus-visible:ring-offset-2"
+                >
+                  Customer Sign In
+                </Link>
+              )}
             </div>
           </div>
         </div>

@@ -117,9 +117,9 @@ export default async function AboutPage() {
                 
                 {/* Image 1 */}
                 <div className="relative h-[380px] w-full overflow-hidden rounded-[2rem] shadow-2xl bg-slate-200">
-                  {data?.image1Url ? (
+                  {image1 ? (
                     <Image
-                      src={data.image1Url}
+                      src={image1}
                       alt="Highlanders training equipment"
                       fill
                       className="object-cover"
@@ -135,9 +135,9 @@ export default async function AboutPage() {
                 {/* Overlapping Image 2 */}
                 <div className="absolute -bottom-6 right-0 w-[55%] z-20">
                   <div className="relative h-[200px] overflow-hidden rounded-[1.5rem] bg-slate-300 shadow-2xl border-4 border-white">
-                    {data?.image2Url ? (
+                    {image2 ? (
                       <Image
-                        src={data.image2Url}
+                        src={image2}
                         alt="Highlanders sports performance"
                         fill
                         className="object-cover"

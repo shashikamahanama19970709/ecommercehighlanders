@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCollection } from '@/lib/mongodb';
 import { randomBytes } from 'crypto';
 import { sendMail } from '@/lib/email';
+import { getVerificationEmailTemplate } from '@/lib/email-templates';
 import type { AppUser } from '@/types/user';
 const RATE_LIMIT_SECONDS = 60;
 
@@ -29,8 +30,9 @@ export async function POST(req: NextRequest) {
     const verifyUrl = `${appUrl}/verify-email?token=${emailVerificationToken}`;
     await sendMail({
       to: email,
-      subject: 'Verify your email',
-      html: `<p>Hi ${user.name || ''},</p><p>Please verify your email by clicking the link below:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
+      subject: 'Verify your email address - Highlanders Sports',
+      html: getVerificationEmailTemplate(user.name || 'Customer', verifyUrl),
+      fromKey: 'support',
     });
     return NextResponse.json({ success: true });
   } catch (e) {

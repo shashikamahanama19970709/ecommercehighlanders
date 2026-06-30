@@ -160,7 +160,7 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
             </svg>
           </button>
           <Link
-            href="/admin/sports"
+            href="/shop-by-sport"
             className="cursor-pointer rounded-full bg-foreground px-3 py-1 text-xs font-medium text-background hover:bg-foreground/90 transition-colors"
           >
             View All

@@ -2,12 +2,13 @@
 
 import { signOut } from "next-auth/react";
 import { usePathname } from "next/navigation";
-import { LogOut, User, Bell, LayoutDashboard, Store, Trophy, Wrench, Tag, Package, CreditCard } from "lucide-react";
+import { LogOut, User, Bell, LayoutDashboard, Store, Trophy, Wrench, Tag, Package, CreditCard, Settings } from "lucide-react";
 import Image from "next/image";
 import type { Session } from "next-auth";
 
 const pageMap: Record<string, { title: string; subtitle: string; icon: React.ElementType }> = {
   "/admin":           { title: "Dashboard",   subtitle: "Overview of your store performance",      icon: LayoutDashboard },
+  "/admin/settings":  { title: "Settings",    subtitle: "Configure administrator profile settings",icon: Settings        },
   "/admin/landing":   { title: "Landing",     subtitle: "Manage hero banners and page content",    icon: Store           },
   "/admin/sports":    { title: "Sports",      subtitle: "Manage sports categories and equipment",  icon: Trophy          },
   "/admin/equipment": { title: "Equipment",   subtitle: "Configure equipment specifications",       icon: Wrench          },

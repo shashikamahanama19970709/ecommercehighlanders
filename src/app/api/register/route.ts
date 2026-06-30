@@ -4,6 +4,7 @@ import { getCollection } from '@/lib/mongodb';
 import type { AppUser } from '@/types/user';
 import { randomBytes } from 'crypto';
 import { sendMail } from '@/lib/email';
+import { getVerificationEmailTemplate } from '@/lib/email-templates';
 
 export async function POST(req: NextRequest) {
   try {
@@ -38,8 +39,9 @@ export async function POST(req: NextRequest) {
     const verifyUrl = `${appUrl}/verify-email?token=${emailVerificationToken}`;
     await sendMail({
       to: email,
-      subject: 'Verify your email',
-      html: `<p>Hi ${name},</p><p>Thank you for registering. Please verify your email by clicking the link below:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p>`
+      subject: 'Verify your email address - Highlanders Sports',
+      html: getVerificationEmailTemplate(name, verifyUrl),
+      fromKey: 'support',
     });
 
     return NextResponse.json({ success: true });

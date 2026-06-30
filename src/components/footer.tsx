@@ -95,9 +95,34 @@ const LogoMark = ({ id }: { id: string }) => (
 
 export default function Footer() {
   const [shopBySportModule, setShopBySportModule] = useState<ShopBySportModule | null>(null);
+  const [allSports, setAllSports] = useState<Sport[]>([]);
   const [email, setEmail] = useState('');
-  const [subStatus, setSubStatus] = useState<'idle' | 'submitted'>('idle');
+  const [subStatus, setSubStatus] = useState<'idle' | 'loading' | 'submitted' | 'error'>('idle');
+  const [subError, setSubError] = useState<string | null>(null);
   const currentYear = new Date().getFullYear();
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+    setSubStatus('loading');
+    setSubError(null);
+    try {
+      const res = await fetch('/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Subscription failed.');
+      }
+      setSubStatus('submitted');
+      setEmail('');
+    } catch (err: any) {
+      setSubStatus('error');
+      setSubError(err.message || 'Something went wrong.');
+    }
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -111,6 +136,17 @@ export default function Footer() {
       }
     })();
     return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/sports')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAllSports(data);
+        }
+      })
+      .catch(err => console.error("Error loading sports for footer:", err));
   }, []);
 
   const sports = useMemo(() => {
@@ -165,39 +201,43 @@ export default function Footer() {
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
-                You&apos;re subscribed!
+                You&apos;re subscribed! Check your inbox for your 10% coupon.
               </div>
             ) : (
-              <form
-                className="flex w-full max-w-sm gap-2"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (email) setSubStatus('submitted');
-                }}
-              >
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  required
-                  className="flex-1 rounded-full border px-4 py-2.5 text-sm text-white outline-none transition-all"
-                  style={{
-                    borderColor: 'rgba(255,255,255,0.15)',
-                    background: 'rgba(255,255,255,0.08)',
-                  }}
-                />
-                <button
-                  type="submit"
-                  className="shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-90 focus:outline-none"
-                  style={{
-                    background: 'linear-gradient(135deg, #d4a84b 0%, #f0c870 50%, #c8a84b 100%)',
-                    color: '#0f1a2e',
-                  }}
+              <div className="flex flex-col gap-1.5 w-full max-w-sm">
+                <form
+                  className="flex w-full gap-2"
+                  onSubmit={handleSubscribe}
                 >
-                  Subscribe
-                </button>
-              </form>
+                  <input
+                    type="email"
+                    value={email}
+                    disabled={subStatus === 'loading'}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="your@email.com"
+                    required
+                    className="flex-1 rounded-full border px-4 py-2.5 text-sm text-white outline-none transition-all disabled:opacity-50"
+                    style={{
+                      borderColor: 'rgba(255,255,255,0.15)',
+                      background: 'rgba(255,255,255,0.08)',
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={subStatus === 'loading'}
+                    className="shrink-0 rounded-full px-5 py-2.5 text-sm font-semibold transition-all hover:opacity-90 focus:outline-none disabled:opacity-50"
+                    style={{
+                      background: 'linear-gradient(135deg, #d4a84b 0%, #f0c870 50%, #c8a84b 100%)',
+                      color: '#0f1a2e',
+                    }}
+                  >
+                    {subStatus === 'loading' ? 'Sending...' : 'Subscribe'}
+                  </button>
+                </form>
+                {subStatus === 'error' && (
+                  <p className="text-xs text-red-400 mt-1 pl-2 text-left">{subError || 'Subscription failed.'}</p>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -266,9 +306,15 @@ export default function Footer() {
               Shop by Sport
             </h4>
             <ul className="space-y-2.5">
-              {sports.length > 0 ? (
+              {allSports.length > 0 ? (
+                allSports.slice(0, 6).map((sport) => (
+                  <FooterLink key={sport._id} href={`/shop-by-sport?sportId=${sport._id}`}>
+                    {sport.name}
+                  </FooterLink>
+                ))
+              ) : sports.length > 0 ? (
                 sports.slice(0, 6).map((sport) => (
-                  <FooterLink key={sport._id} href="/shop-by-sport">
+                  <FooterLink key={sport._id} href={`/shop-by-sport?sportId=${sport._id}`}>
                     {sport.name}
                   </FooterLink>
                 ))

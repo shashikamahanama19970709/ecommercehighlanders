@@ -11,10 +11,12 @@ import {
   Wrench,
   CreditCard,
   ExternalLink,
+  Settings,
 } from "lucide-react";
 
 const navigation = [
   { name: "Dashboard",  href: "/admin",           icon: LayoutDashboard, group: "overview" },
+  { name: "Settings",   href: "/admin/settings",  icon: Settings,        group: "overview" },
   { name: "Landing",    href: "/admin/landing",   icon: Store,           group: "content"  },
   { name: "Sports",     href: "/admin/sports",    icon: Trophy,          group: "content"  },
   { name: "Equipment",  href: "/admin/equipment", icon: Wrench,          group: "content"  },

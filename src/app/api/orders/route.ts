@@ -2,11 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
 import { getCollection } from "@/lib/mongodb";
 import type { Order } from "@/types/order";
+import { auth } from "@/auth";
 
-// GET /api/orders - list all orders (admin usage)
+// GET /api/orders - list orders (filters by user email if not admin)
 export async function GET() {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+  }
+
+  const email = session.user.email;
+  const role = (session.user as any).role || "customer";
+
   const ordersCol = await getCollection<Order>("orders");
-  const orders = await ordersCol.find({}).sort({ createdAt: -1 }).toArray();
+  
+  let query = {};
+  if (role !== "admin") {
+    query = { email };
+  }
+
+  const orders = await ordersCol.find(query).sort({ createdAt: -1 }).toArray();
   return NextResponse.json(orders);
 }
 

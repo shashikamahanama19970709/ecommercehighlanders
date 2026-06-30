@@ -185,6 +185,12 @@ function CustomerLoginForm() {
                 <label htmlFor="customer-password" className="block text-sm font-semibold text-[#0f1a2e]">
                   Password
                 </label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-bold text-[#1e3a5f] hover:underline"
+                >
+                  Forgot password?
+                </Link>
               </div>
               <div className="relative">
                 <input

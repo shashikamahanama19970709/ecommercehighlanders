@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { HeaderNav } from "@/components/header-nav";
 import { useCurrency } from "@/lib/currency-context";
+import { useSession } from "next-auth/react";
 import type { ShopBySportModule } from "@/types/shop-by-sport";
 import type { Brand, Product, Sport } from "@/types/product";
 
@@ -100,6 +101,7 @@ function getSpecificationValues(product: Product, key: string): string[] {
 
 function ShopBySportPageContent() {
   const { formatPrice, convertPrice, selectedCurrency } = useCurrency();
+  const { data: session } = useSession();
   const searchParams = useSearchParams();
   const requestedSportId = searchParams.get('sportId') ?? '';
 
@@ -128,6 +130,45 @@ function ShopBySportPageContent() {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Notify Me states
+  const [notifyEmail, setNotifyEmail] = useState('');
+  const [notifyStatus, setNotifyStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [notifyError, setNotifyError] = useState<string | null>(null);
+
+  // Pre-fill email and reset states on active product change
+  useEffect(() => {
+    if (activeProduct) {
+      setNotifyEmail(session?.user?.email || '');
+      setNotifyStatus('idle');
+      setNotifyError(null);
+    }
+  }, [activeProduct, session]);
+
+  const handleNotifyMe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeProduct || !notifyEmail) return;
+    setNotifyStatus('loading');
+    setNotifyError(null);
+
+    try {
+      const res = await fetch('/api/products/notify-me', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: String(activeProduct._id), email: notifyEmail }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Registration failed.');
+      }
+
+      setNotifyStatus('success');
+    } catch (err: any) {
+      setNotifyStatus('error');
+      setNotifyError(err.message || 'Something went wrong.');
+    }
+  };
 
   useEffect(() => {
     const run = async () => {
@@ -849,12 +890,49 @@ function ShopBySportPageContent() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <AddToCartButton product={activeProduct} size={16} />
-                      <span className="text-sm font-medium text-foreground">Add to cart</span>
+                  {Number(activeProduct.stock ?? 0) > 0 ? (
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AddToCartButton product={activeProduct} size={16} />
+                        <span className="text-sm font-medium text-foreground">Add to cart</span>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="mt-4 border-t border-border/60 pt-4 space-y-2">
+                      {notifyStatus === "success" ? (
+                        <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-xs text-green-700 font-medium">
+                          ✓ You&apos;re on the list! We will email you the moment this gear is back in stock.
+                        </div>
+                      ) : (
+                        <form onSubmit={handleNotifyMe} className="space-y-2 text-left">
+                          <p className="text-[11px] font-medium text-muted-foreground leading-normal">
+                            Get notified the second this item is restocked.
+                          </p>
+                          {notifyStatus === "error" && (
+                            <p className="text-[11px] font-bold text-red-500">{notifyError}</p>
+                          )}
+                          <div className="flex gap-2">
+                            <input
+                              type="email"
+                              required
+                              placeholder="your@email.com"
+                              value={notifyEmail}
+                              onChange={(e) => setNotifyEmail(e.target.value)}
+                              disabled={notifyStatus === "loading"}
+                              className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground"
+                            />
+                            <button
+                              type="submit"
+                              disabled={notifyStatus === "loading"}
+                              className="rounded-xl bg-foreground px-4 py-2 text-xs font-bold text-background hover:opacity-90 disabled:opacity-50 transition-opacity"
+                            >
+                              {notifyStatus === "loading" ? "Saving..." : "Notify Me"}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {activeProduct.description && activeProduct.description.trim() && (

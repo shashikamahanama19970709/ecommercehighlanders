@@ -12,6 +12,10 @@ class EmailNotVerified extends CredentialsSignin {
   code = "EMAIL_NOT_VERIFIED";
 }
 
+class AdminAccessOnly extends CredentialsSignin {
+  code = "ADMIN_ACCESS_ONLY";
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
   session: {
@@ -27,10 +31,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
+        loginType: { label: "Login Type", type: "text" },
       },
       async authorize(credentials) {
         const email = typeof credentials?.email === "string" ? credentials.email : null;
         const password = typeof credentials?.password === "string" ? credentials.password : null;
+        const loginType = typeof credentials?.loginType === "string" ? credentials.loginType : "customer";
         if (!email || !password) return null;
 
         const usersCol = await getCollection<AppUser>("users");
@@ -40,6 +46,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           // Special error string for unverified
           throw new EmailNotVerified();
         }
+
+        const adminEmail = (process.env.ADMIN_EMAIL || "admin@example.com").trim().toLowerCase();
+        const isAdmin = user.role === "admin" || user.email.toLowerCase().trim() === adminEmail;
+
+        if (loginType === "admin" && !isAdmin) {
+          throw new AdminAccessOnly();
+        }
+
         const isValid = await bcrypt.compare(password, user.passwordHash as string);
         if (!isValid) return null;
         return {
@@ -47,7 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: user.name ?? null,
           email: user.email,
           image: user.image ?? null,
-          role: user.role,
+          role: user.role ?? (isAdmin ? "admin" : "customer"),
           baseCurrency: (user as any).baseCurrency ?? null,
         } as any;
       },

@@ -8,6 +8,7 @@ import Sport from "@/lib/models/Sport";
 import Brand from "@/lib/models/Brand";
 import Equipment from "@/lib/models/Equipment";
 import type { Product } from "@/types/product";
+import { checkAndSendRestockNotifications } from "@/lib/restock-notification";
 
 async function resolveIdOrName(value: unknown, kind: "sport" | "brand"): Promise<string | null> {
   if (typeof value !== "string" || value.trim() === "") return null;
@@ -79,6 +80,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   await productsCol.updateOne({ _id: new ObjectId(id) } as any, { $set: update });
 
   const updated = await productsCol.findOne({ _id: new ObjectId(id) } as any);
+  if (updated && typeof updated.stock === "number" && updated.stock > 0) {
+    void checkAndSendRestockNotifications(id, updated.stock);
+  }
 
   return NextResponse.json(updated);
 }
@@ -111,6 +115,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     );
 
     const updated = await productsCol.findOne({ _id: new ObjectId(id) } as any);
+    if (updated && typeof updated.stock === "number" && updated.stock > 0) {
+      void checkAndSendRestockNotifications(id, updated.stock);
+    }
     return NextResponse.json(updated);
   }
 
@@ -205,6 +212,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   if (!updated) {
     return NextResponse.json({ message: "Product not found" }, { status: 404 });
+  }
+
+  if (updated && typeof updated.stock === "number" && updated.stock > 0) {
+    void checkAndSendRestockNotifications(id, updated.stock);
   }
 
   return NextResponse.json(updated);
