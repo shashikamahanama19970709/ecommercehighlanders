@@ -9,8 +9,13 @@ import type { Brand, Sport } from "@/types/product";
 import type { ShopBySportModule } from "@/types/shop-by-sport";
 import type { AboutUsModule } from "@/types/about-us";
 
+function getBaseUrl() {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  return "https://ecommercehighlanders-production-8cbc.up.railway.app";
+}
+
 async function fetchSports() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/sports`, {
+  const res = await fetch(`${getBaseUrl()}/api/sports`, {
     cache: "no-store",
   });
 
@@ -19,7 +24,7 @@ async function fetchSports() {
 }
 
 async function fetchBrands() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/brands`, {
+  const res = await fetch(`${getBaseUrl()}/api/brands`, {
     cache: "no-store",
   });
 
@@ -28,7 +33,7 @@ async function fetchBrands() {
 }
 
 async function fetchShopBySportModule() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/shop-by-sport`, {
+  const res = await fetch(`${getBaseUrl()}/api/shop-by-sport`, {
     cache: "no-store",
   });
 
@@ -37,7 +42,7 @@ async function fetchShopBySportModule() {
 }
 
 async function fetchAboutUsModule() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL ?? ""}/api/landing/about-us`, {
+  const res = await fetch(`${getBaseUrl()}/api/landing/about-us`, {
     cache: "no-store",
   });
 
