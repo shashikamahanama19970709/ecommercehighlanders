@@ -3,13 +3,12 @@
 import { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import type { Brand, Sport } from '@/types/product';
+import type { Brand } from '@/types/product';
 import type { ShopBySportModule } from '@/types/shop-by-sport';
 
 type Props = {
   brands: Brand[];
   shopBySportModule: ShopBySportModule | null;
-  sports?: Sport[];
 };
 
 export function BrandsLandingSection({ brands }: Props) {

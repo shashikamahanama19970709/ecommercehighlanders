@@ -7,7 +7,7 @@ import { ShoppingCart } from 'lucide-react';
 import { AddToCartButton } from '@/components/add-to-cart-button';
 import { useCurrency } from '@/lib/currency-context';
 import type { ShopBySportEntry, ShopBySportModule } from '@/types/shop-by-sport';
-import type { Product, Sport } from '@/types/product';
+import type { Product } from '@/types/product';
 
 function getName(value: unknown): string {
   if (!value) return '';
@@ -40,34 +40,13 @@ function getProductImage(p: Product): string | undefined {
 
 type Props = {
   moduleDoc: ShopBySportModule | null;
-  sports?: Sport[];
 };
 
-export function ShopBySportLandingSection({ moduleDoc, sports }: Props) {
+export function ShopBySportLandingSection({ moduleDoc }: Props) {
   const { formatPrice, selectedCurrency } = useCurrency();
-
-  const fallbackEntries = useMemo(() => {
-    return (sports || []).map((sport) => ({
-      sport,
-      heroImageKey: sport.imageKey,
-      heroImageUrl: sport.imageKey ? `/api/upload?key=${encodeURIComponent(sport.imageKey)}` : undefined,
-      productIds: [],
-      products: [],
-    })) as unknown as ShopBySportEntry[];
-  }, [sports]);
-
   const entries = useMemo(() => {
-    const raw = Array.isArray(moduleDoc?.entries) ? moduleDoc!.entries : [];
-    const filtered = raw.filter((entry) => {
-      const name = getName(entry?.sport);
-      return typeof name === 'string' && name.trim() !== '';
-    });
-
-    if (filtered.length === 0) {
-      return fallbackEntries;
-    }
-    return filtered;
-  }, [moduleDoc, fallbackEntries]);
+    return Array.isArray(moduleDoc?.entries) ? moduleDoc!.entries : [];
+  }, [moduleDoc]);
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [heroImageError, setHeroImageError] = useState(false);

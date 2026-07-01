@@ -121,13 +121,13 @@ export default async function Home() {
 
         <section className="bg-background py-16">
           <div className="mx-auto w-full max-w-6xl px-6">
-            <ShopBySportLandingSection moduleDoc={shopBySportModule} sports={sports} />
+            <ShopBySportLandingSection moduleDoc={shopBySportModule} />
           </div>
         </section>
 
         <section className="bg-gradient-to-b from-muted/50 via-background to-background py-16">
           <div className="mx-auto w-full max-w-6xl px-6">
-            <BrandsLandingSection brands={brands} shopBySportModule={shopBySportModule} sports={sports} />
+            <BrandsLandingSection brands={brands} shopBySportModule={shopBySportModule} />
           </div>
         </section>
 
