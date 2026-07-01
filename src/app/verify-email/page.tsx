@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2, CheckCircle2, XCircle, ArrowLeft, AlertCircle } from "lucide-react";
+import { CheckCircle2, XCircle, ArrowLeft, AlertCircle } from "lucide-react";
+import { LogoLoader } from "@/components/logo-loader";
 
 function VerifyEmailPageContent() {
   const searchParams = useSearchParams();
@@ -94,9 +95,7 @@ function VerifyEmailPageContent() {
           {/* Status Illustration */}
           <div className="mb-6 flex justify-center">
             {status === 'pending' && (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#1e3a5f]/06">
-                <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
-              </div>
+              <LogoLoader size="sm" />
             )}
             {status === 'success' && (
               <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50">
@@ -189,7 +188,7 @@ export default function VerifyEmailPage() {
   return (
     <Suspense fallback={
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#f0f4f8] to-[#e8edf5]">
-        <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
+        <LogoLoader size="sm" />
       </div>
     }>
       <VerifyEmailPageContent />

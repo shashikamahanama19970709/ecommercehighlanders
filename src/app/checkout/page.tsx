@@ -17,7 +17,6 @@ import {
   Tag,
   CreditCard,
   Shield,
-  Loader2,
   Trash2,
   Plus,
   Minus,
@@ -25,6 +24,7 @@ import {
   CheckCircle,
   Lock,
 } from 'lucide-react';
+import { LogoLoader } from '@/components/logo-loader';
 
 type Coupon = { code: string; description: string };
 
@@ -90,7 +90,7 @@ export default function CheckoutPage() {
   if (!mounted || userLoading) {
     return (
       <div className="flex min-h-[60vh] flex-1 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
+        <LogoLoader size="sm" />
       </div>
     );
   }
@@ -586,7 +586,7 @@ export default function CheckoutPage() {
                   >
                     {isPlacingOrder ? (
                       <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <LogoLoader size="xs" />
                         Processing…
                       </span>
                     ) : (

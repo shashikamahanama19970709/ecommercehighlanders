@@ -2,7 +2,8 @@
 
 import { useState, FormEvent } from "react";
 import Link from "next/link";
-import { Mail, ArrowLeft, Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { Mail, ArrowLeft, CheckCircle, AlertCircle } from "lucide-react";
+import { LogoLoader } from "@/components/logo-loader";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -106,7 +107,7 @@ export default function ForgotPasswordPage() {
             >
               {loading ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LogoLoader size="xs" />
                   Sending Link...
                 </>
               ) : (

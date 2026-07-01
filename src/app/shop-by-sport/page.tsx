@@ -4,12 +4,14 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 import Image from "next/image";
+import ImageWithFallback from "@/components/image-with-fallback";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { HeaderNav } from "@/components/header-nav";
 import { useCurrency } from "@/lib/currency-context";
 import { useSession } from "next-auth/react";
+import { LogoLoader } from "@/components/logo-loader";
 import type { ShopBySportModule } from "@/types/shop-by-sport";
 import type { Brand, Product, Sport } from "@/types/product";
 
@@ -438,8 +440,8 @@ function ShopBySportPageContent() {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-10">
-        <div className="rounded-2xl border bg-muted p-10 text-center text-sm text-muted-foreground">Loading…</div>
+      <div className="mx-auto max-w-6xl px-4 py-16 flex justify-center items-center">
+        <LogoLoader size="md" />
       </div>
     );
   }
@@ -677,7 +679,9 @@ function ShopBySportPageContent() {
 
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {isProductsLoading ? (
-                  <div className="col-span-full rounded-2xl border bg-muted p-10 text-center text-sm text-muted-foreground">Loading products…</div>
+                  <div className="col-span-full py-12 flex justify-center items-center">
+                    <LogoLoader size="sm" />
+                  </div>
                 ) : productsError ? (
                   <div className="col-span-full rounded-2xl border border-destructive/30 bg-destructive/10 p-10 text-center text-sm text-destructive">{productsError}</div>
                 ) : filteredProducts.length === 0 ? (
@@ -755,7 +759,7 @@ function ShopBySportPageContent() {
                       >
                         <div className="relative h-32 w-full bg-muted">
                           {img ? (
-                            <Image src={img} alt={equipmentName} fill className="object-cover" />
+                            <ImageWithFallback src={img} alt={equipmentName} fill className="object-cover" />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-[11px] text-muted-foreground">No image</div>
                           )}
@@ -843,7 +847,7 @@ function ShopBySportPageContent() {
                   }}
                 >
                   {activeProductImageUrl ? (
-                    <Image
+                    <ImageWithFallback
                       src={activeProductImageUrl}
                       alt={getName(activeProduct.equipment) || activeProduct.name || "Product"}
                       fill
@@ -865,7 +869,7 @@ function ShopBySportPageContent() {
                           onClick={() => setActiveProductImageUrl(u)}
                           className={`relative h-14 w-20 flex-none overflow-hidden rounded-lg border bg-muted ${isActive ? "ring-2 ring-foreground" : "hover:bg-accent"}`}
                         >
-                          <Image src={u} alt="" fill className="object-cover" />
+                          <ImageWithFallback src={u} alt="" fill className="object-cover" />
                         </button>
                       );
                     })}
@@ -977,8 +981,8 @@ export default function ShopBySportPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-6xl px-4 py-10">
-          <div className="rounded-2xl border bg-muted p-10 text-center text-sm text-muted-foreground">Loading…</div>
+        <div className="mx-auto max-w-6xl px-4 py-16 flex justify-center items-center">
+          <LogoLoader size="md" />
         </div>
       }
     >

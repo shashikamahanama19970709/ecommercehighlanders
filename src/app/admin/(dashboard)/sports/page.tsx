@@ -208,7 +208,7 @@ export default function AdminSportsPage() {
               setPreviewUrl('');
               setIsModalOpen(true);
             }}
-            className="cursor-pointer flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="cursor-pointer flex items-center gap-2 rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] px-5 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all uppercase tracking-wider"
           >
             <Plus className="h-4 w-4" />
             Add Sport
@@ -443,7 +443,7 @@ export default function AdminSportsPage() {
                     <button
                       type="button"
                       onClick={addEquipmentType}
-                      className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-800"
+                      className="cursor-pointer text-xs font-bold text-[#0f1a2e] hover:text-[#c8a84b]"
                     >
                       + Add Type
                     </button>

@@ -340,7 +340,7 @@ export default function AdminShopBySportPage() {
             <button
               type="button"
               onClick={loadAll}
-              className="cursor-pointer rounded-full border border-border bg-background px-3 py-2 text-xs hover:bg-accent"
+              className="cursor-pointer rounded-full border-2 border-[#0f1a2e] text-[#0f1a2e] hover:bg-[#0f1a2e] hover:text-white px-4 py-2 text-xs font-bold transition-all uppercase tracking-wider"
             >
               Refresh
             </button>
@@ -348,7 +348,7 @@ export default function AdminShopBySportPage() {
               type="button"
               onClick={openCreateModal}
               disabled={entries.length >= MAX_SPORTS}
-              className="cursor-pointer rounded-full border border-border bg-background px-3 py-2 text-xs hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              className="cursor-pointer rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-60"
             >
               Add sport
             </button>
@@ -356,7 +356,7 @@ export default function AdminShopBySportPage() {
               type="button"
               disabled={isSaving}
               onClick={saveModule}
-              className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+              className="cursor-pointer rounded-full bg-[#0f1a2e] hover:bg-[#c8a84b] px-4 py-2 text-xs font-bold text-white shadow-md hover:shadow-lg transition-all uppercase tracking-wider disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSaving ? 'Saving…' : 'Save module'}
             </button>

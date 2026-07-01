@@ -8,6 +8,8 @@ import { HeaderNav } from "@/components/header-nav";
 import { useCurrency } from "@/lib/currency-context";
 import { useSession } from "next-auth/react";
 import type { Brand, Product, Sport } from "@/types/product";
+import { LogoLoader } from "@/components/logo-loader";
+import ImageWithFallback from "@/components/image-with-fallback";
 import { Sparkles, Search, ShoppingBag, X } from "lucide-react";
 
 function getProductImage(p: Product): string | undefined {
@@ -453,12 +455,12 @@ function BestSellingPageContent() {
                       >
                         <div className="relative h-44 w-full bg-slate-50">
                           {img ? (
-                            <Image
-                              src={img}
-                              alt={imageAlt}
-                              fill
-                              className="object-cover transition-transform duration-300 group-hover:scale-102"
-                            />
+                             <ImageWithFallback
+                               src={img}
+                               alt={imageAlt}
+                               fill
+                               className="object-cover transition-transform duration-300 group-hover:scale-102"
+                             />
                           ) : (
                             <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No Image</div>
                           )}
@@ -535,12 +537,12 @@ function BestSellingPageContent() {
               <div className="space-y-4">
                 <div className="relative h-64 sm:h-80 w-full overflow-hidden rounded-2xl bg-slate-50 border">
                   {activeProductImageUrl ? (
-                    <Image
-                      src={activeProductImageUrl}
-                      alt={activeProduct.name || "Product image"}
-                      fill
-                      className="object-contain"
-                    />
+                     <ImageWithFallback
+                       src={activeProductImageUrl}
+                       alt={activeProduct.name || "Product image"}
+                       fill
+                       className="object-contain"
+                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No product image</div>
                   )}
@@ -557,7 +559,7 @@ function BestSellingPageContent() {
                           activeProductImageUrl === img ? "border-[#c8a84b] ring-2 ring-[#c8a84b]/10" : "hover:border-[#0f1a2e]/30"
                         }`}
                       >
-                        <Image src={img} alt="thumbnail" fill className="object-cover" />
+                        <ImageWithFallback src={img} alt="thumbnail" fill className="object-cover" />
                       </button>
                     ))}
                   </div>
@@ -673,8 +675,8 @@ export default function BestSellingPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-6xl px-4 py-10">
-          <div className="rounded-2xl border bg-muted p-10 text-center text-sm text-muted-foreground animate-pulse">Loading Best Sellers…</div>
+        <div className="mx-auto max-w-6xl px-4 py-16 flex justify-center items-center">
+          <LogoLoader size="md" />
         </div>
       }
     >

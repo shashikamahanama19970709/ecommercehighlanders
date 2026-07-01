@@ -3,7 +3,8 @@
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
+import { LogoLoader } from "@/components/logo-loader";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -229,7 +230,7 @@ export default function RegisterPage() {
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LogoLoader size="xs" />
                   Creating account…
                 </span>
               ) : (

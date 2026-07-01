@@ -3,7 +3,8 @@
 import { useState, FormEvent, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Lock, Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
+import { LogoLoader } from "@/components/logo-loader";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -149,7 +150,7 @@ function ResetPasswordForm() {
           >
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <LogoLoader size="xs" />
                 Updating Password...
               </>
             ) : (
@@ -167,7 +168,7 @@ export default function ResetPasswordPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 py-12 sm:px-6">
       <Suspense fallback={
         <div className="w-full max-w-md bg-white border border-[#dde4ee] rounded-2xl p-8 shadow-xl flex flex-col items-center justify-center gap-3">
-          <Loader2 className="h-8 w-8 text-[#0f1a2e] animate-spin" />
+          <LogoLoader size="sm" />
           <span className="text-sm text-[#64748b]">Verifying reset details...</span>
         </div>
       }>

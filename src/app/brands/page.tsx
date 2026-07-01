@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import ImageWithFallback from '@/components/image-with-fallback';
 import Link from 'next/link';
 import type { Brand } from '@/types/product';
 
@@ -39,7 +40,7 @@ export default async function BrandsPage() {
               title={brand.name}
             >
               {brand.logoUrl ? (
-                <Image
+                <ImageWithFallback
                   src={brand.logoUrl}
                   alt={brand.name}
                   width={140}

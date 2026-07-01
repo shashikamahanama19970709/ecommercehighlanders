@@ -3,6 +3,7 @@
 import { useCart } from '@/lib/cart-context';
 import { useCurrency } from '@/lib/currency-context';
 import Image from 'next/image';
+import ImageWithFallback from '@/components/image-with-fallback';
 import Link from 'next/link';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 
@@ -39,7 +40,7 @@ export default function CartPage() {
             <div key={String(item.product._id)} className="flex items-center gap-4 rounded-lg border p-4">
               <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                 {item.product.featureImageUrl ? (
-                  <Image
+                  <ImageWithFallback
                     src={item.product.featureImageUrl}
                     alt={item.product.name || 'Product'}
                     fill

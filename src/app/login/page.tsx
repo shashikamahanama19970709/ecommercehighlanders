@@ -4,7 +4,8 @@ import { FormEvent, Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react";
+import { LogoLoader } from "@/components/logo-loader";
 
 function CustomerLoginForm() {
   const router = useRouter();
@@ -223,7 +224,7 @@ function CustomerLoginForm() {
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <LogoLoader size="xs" />
                   Signing in…
                 </span>
               ) : (
@@ -279,7 +280,7 @@ export default function CustomerLoginPage() {
     <Suspense
       fallback={
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#f0f4f8] to-[#e8edf5]">
-          <Loader2 className="h-8 w-8 animate-spin text-[#1e3a5f]" />
+          <LogoLoader size="sm" />
         </div>
       }
     >

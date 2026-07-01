@@ -1,14 +1,10 @@
-import Image from 'next/image';
+"use client";
+
+import Image, { ImageProps } from 'next/image';
 import { useState } from 'react';
 
-interface ImageWithFallbackProps {
-  src: string;
-  alt: string;
-  width?: number;
-  height?: number;
-  className?: string;
+interface ImageWithFallbackProps extends Omit<ImageProps, 'onError'> {
   fallbackSrc?: string;
-  priority?: boolean;
 }
 
 export default function ImageWithFallback({
@@ -16,8 +12,9 @@ export default function ImageWithFallback({
   alt,
   width,
   height,
+  fill,
   className,
-  fallbackSrc = '/placeholder.png',
+  fallbackSrc = '/placeholder.svg',
   priority = false,
   ...props
 }: ImageWithFallbackProps) {
@@ -32,7 +29,7 @@ export default function ImageWithFallback({
   };
 
   // For Backblaze B2 images, use unoptimized mode to avoid timeout issues
-  const isBackblazeImage = src.includes('backblazeb2.com');
+  const isBackblazeImage = typeof src === 'string' && src.includes('backblazeb2.com');
 
   return (
     <Image
@@ -41,6 +38,7 @@ export default function ImageWithFallback({
       alt={alt}
       width={width}
       height={height}
+      fill={fill}
       className={className}
       priority={priority}
       unoptimized={isBackblazeImage}

@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#f8fafc"/>
+      <stop offset="100%" stopColor="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="mt-silver" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#cbd5e1"/>
+      <stop offset="100%" stopColor="#94a3b8"/>
+    </linearGradient>
+    <linearGradient id="mt-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#d4a84b"/>
+      <stop offset="100%" stopColor="#9a6e08"/>
+    </linearGradient>
+    <linearGradient id="mt-navy" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#1e3a5f"/>
+      <stop offset="100%" stopColor="#0f1a2e"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="100%" height="100%" fill="url(#bg)"/>
+  
+  <!-- Branded Graphic Group -->
+  <g transform="translate(140, 60)">
+    <!-- Mountain Background -->
+    <polygon points="10,93 40,27 70,93" fill="url(#mt-silver)"/>
+    <polygon points="37,93 67,12 97,93" fill="url(#mt-silver)" opacity="0.8"/>
+    <polygon points="67,12 60,36 75,36" fill="#ffffff" opacity="0.9"/>
+    <!-- Branded Curves -->
+    <path d="M7,102 Q34,78 64,90 Q88,99 112,78" stroke="url(#mt-gold)" strokeWidth="6" fill="none" strokeLinecap="round"/>
+    <path d="M7,111 Q37,93 67,102 Q91,109 115,90" stroke="url(#mt-navy)" strokeWidth="4.5" fill="none" strokeLinecap="round" opacity="0.75"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="50%" y="225" font-family="'Outfit', 'Inter', sans-serif" font-size="14" font-weight="700" fill="#0f1a2e" text-anchor="middle" letter-spacing="1.5">HIGHLANDERS SPORTS</text>
+  <text x="50%" y="245" font-family="'Outfit', 'Inter', sans-serif" font-size="11" font-weight="600" fill="#c8a84b" text-anchor="middle" letter-spacing="1">IMAGE TEMPORARILY OFFLINE</text>
+</svg>

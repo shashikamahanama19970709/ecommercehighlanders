@@ -2,7 +2,8 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { Shield, User, Lock, Mail, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Shield, User, Lock, Mail, CheckCircle, AlertCircle } from "lucide-react";
+import { LogoLoader } from "@/components/logo-loader";
 
 export default function AdminSettingsPage() {
   const { data: session } = useSession();
@@ -124,7 +125,7 @@ export default function AdminSettingsPage() {
                 </div>
               </div>
               <div className="flex justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin text-[#0f1a2e]" />
+                <LogoLoader size="sm" />
               </div>
             </div>
           ) : step === "edit" ? (
@@ -205,7 +206,7 @@ export default function AdminSettingsPage() {
               >
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <LogoLoader size="xs" />
                     Requesting Verification...
                   </>
                 ) : (
@@ -257,7 +258,7 @@ export default function AdminSettingsPage() {
                 >
                   {loading ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <LogoLoader size="xs" />
                       Saving changes...
                     </>
                   ) : (
