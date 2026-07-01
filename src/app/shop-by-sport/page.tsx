@@ -981,8 +981,18 @@ export default function ShopBySportPage() {
   return (
     <Suspense
       fallback={
-        <div className="mx-auto max-w-6xl px-4 py-16 flex justify-center items-center">
-          <LogoLoader size="md" />
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background/70 backdrop-blur-md transition-all duration-300">
+          <div className="space-y-4 text-center">
+            <LogoLoader size="lg" />
+            <div className="space-y-1">
+              <p className="text-sm font-bold tracking-widest uppercase text-[#0f1a2e] animate-pulse">
+                Highlanders
+              </p>
+              <p className="text-[10px] font-semibold tracking-widest uppercase text-[#c8a84b]">
+                Sports &amp; Fitness
+              </p>
+            </div>
+          </div>
         </div>
       }
     >
