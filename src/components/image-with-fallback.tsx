@@ -18,14 +18,17 @@ export default function ImageWithFallback({
   priority = false,
   ...props
 }: ImageWithFallbackProps) {
-  const [imgSrc, setImgSrc] = useState(src);
-  const [hasError, setHasError] = useState(false);
+  const [isFailed, setIsFailed] = useState(false);
+  const [prevSrc, setPrevSrc] = useState(src);
+
+  // Adjust state during render if src changes
+  if (src !== prevSrc) {
+    setIsFailed(false);
+    setPrevSrc(src);
+  }
 
   const handleError = () => {
-    if (!hasError && imgSrc !== fallbackSrc) {
-      setHasError(true);
-      setImgSrc(fallbackSrc);
-    }
+    setIsFailed(true);
   };
 
   // For Backblaze B2 images, use unoptimized mode to avoid timeout issues
@@ -34,7 +37,7 @@ export default function ImageWithFallback({
   return (
     <Image
       {...props}
-      src={imgSrc}
+      src={isFailed ? fallbackSrc : src}
       alt={alt}
       width={width}
       height={height}
@@ -43,7 +46,6 @@ export default function ImageWithFallback({
       priority={priority}
       unoptimized={isBackblazeImage}
       onError={handleError}
-      onLoad={() => setHasError(false)}
     />
   );
 }

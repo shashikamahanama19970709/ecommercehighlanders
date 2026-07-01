@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { CartProvider } from "@/lib/cart-context";
 import { CurrencyProvider } from "@/lib/currency-context";
 import { AppFooter } from "@/components/app-footer";
+import { BackToTop } from "@/components/back-to-top";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -70,6 +71,7 @@ export default function RootLayout({
           </AuthProvider>
         </ThemeProvider>
         <AppFooter />
+        <BackToTop />
       </body>
     </html>
   );

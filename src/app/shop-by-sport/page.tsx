@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AddToCartButton } from "@/components/add-to-cart-button";
 import { HeaderNav } from "@/components/header-nav";
+import { Eye, X } from "lucide-react";
 import { useCurrency } from "@/lib/currency-context";
 import { useSession } from "next-auth/react";
 import { LogoLoader } from "@/components/logo-loader";
@@ -127,6 +128,7 @@ function ShopBySportPageContent() {
 
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [activeProductImageUrl, setActiveProductImageUrl] = useState<string>("");
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
   const [specFilters, setSpecFilters] = useState<Record<string, string>>({});
   const [priceMin, setPriceMin] = useState<string>("");
   const [priceMax, setPriceMax] = useState<string>("");
@@ -325,10 +327,16 @@ function ShopBySportPageContent() {
   }, [activeProduct]);
 
   useEffect(() => {
-    if (!activeProduct) return;
+    if (!activeProduct && !zoomImageUrl) return;
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveProduct(null);
+      if (e.key === "Escape") {
+        if (zoomImageUrl) {
+          setZoomImageUrl(null);
+        } else {
+          setActiveProduct(null);
+        }
+      }
     };
 
     const prevOverflow = document.body.style.overflow;
@@ -339,7 +347,7 @@ function ShopBySportPageContent() {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [activeProduct]);
+  }, [activeProduct, zoomImageUrl]);
 
   const selectedSportName = sportsById.get(selectedSportId)?.name ?? 'Sport';
 
@@ -551,7 +559,7 @@ function ShopBySportPageContent() {
             </div>
 
             {!isLockedToRequestedSport && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2.5 py-4 px-3 bg-slate-50/50 rounded-2xl border border-slate-200/40 mb-8 max-h-48 overflow-y-auto scrollbar-thin">
                 {sports.map((sport) => {
                   const id = sport._id ?? '';
                   if (!id) return null;
@@ -562,7 +570,12 @@ function ShopBySportPageContent() {
                       key={id}
                       type="button"
                       onClick={() => setSelectedSportId(id)}
-                      className={`rounded-full border border-border px-3 py-1 text-xs hover:bg-accent ${isActive ? "bg-accent" : "bg-background"}`}
+                      className={
+                        `cursor-pointer px-4 py-2 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all duration-300 border ` +
+                        (isActive
+                          ? "bg-[#0f1a2e] text-[#c8a84b] border-[#c8a84b] shadow-md shadow-[#c8a84b]/10 scale-[1.03]"
+                          : "bg-white text-slate-600 border-slate-200/60 hover:bg-[#0f1a2e]/5 hover:text-[#0f1a2e] hover:border-[#0f1a2e]/20")
+                      }
                     >
                       {sportName}
                     </button>
@@ -773,47 +786,62 @@ function ShopBySportPageContent() {
                     return (
                       <article
                         key={p._id}
-                        onClick={() => {
-                          if (!isLockedToRequestedSport) return;
-                          setActiveProduct(p);
-                        }}
+                        onClick={() => setActiveProduct(p)}
                         onKeyDown={(e) => {
-                          if (!isLockedToRequestedSport) return;
                           if (e.key !== "Enter" && e.key !== " ") return;
                           e.preventDefault();
                           setActiveProduct(p);
                         }}
-                        role={isLockedToRequestedSport ? "button" : undefined}
-                        tabIndex={isLockedToRequestedSport ? 0 : -1}
-                        className={`text-left overflow-hidden rounded-2xl border bg-background shadow-sm transition-colors ${isLockedToRequestedSport ? "cursor-pointer hover:bg-accent/40" : "cursor-default"}`}
+                        role="button"
+                        tabIndex={0}
+                        className="group text-left overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[#c8a84b]/20 cursor-pointer flex flex-col justify-between"
                       >
-                        <div className="relative h-32 w-full bg-muted">
+                        <div className="relative h-40 w-full bg-slate-50/50 overflow-hidden">
                           {img ? (
-                            <ImageWithFallback src={img} alt={equipmentName} fill className="object-cover" />
+                            <ImageWithFallback src={img} alt={equipmentName} fill className="object-cover transition-transform duration-300 group-hover:scale-105" />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center text-[11px] text-muted-foreground">No image</div>
+                            <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground bg-slate-50">No image</div>
                           )}
                         </div>
-                        <div className="space-y-1 p-4 text-xs">
-                          <p className="truncate text-sm font-semibold text-foreground">{equipmentName}</p>
-                          <p className="truncate text-[11px] text-muted-foreground">
-                            {brandName}
-                            {model ? ` • ${model}` : ""}
-                          </p>
-                          <div className="flex items-center justify-between pt-2">
-                            <span className="text-sm font-semibold text-foreground">{formatPrice(Number(p.price ?? 0))}</span>
-                            <div className="flex items-center gap-2">
-                              {isLockedToRequestedSport && (
-                                <span
-                                  onClick={(e) => e.stopPropagation()}
-                                  onKeyDown={(e) => e.stopPropagation()}
-                                >
-                                  <AddToCartButton product={p} size={16} />
-                                </span>
-                              )}
-                              <span className={`rounded-full px-2 py-1 text-[10px] font-medium ${stock > 0 ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                        <div className="flex-1 p-5 flex flex-col justify-between">
+                          <div className="space-y-1.5">
+                            {brandName && (
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-[#c8a84b]">{brandName}</p>
+                            )}
+                            <h3 className="truncate text-sm font-bold text-[#0f1a2e] tracking-tight">{equipmentName}</h3>
+                            {model && (
+                              <p className="truncate text-[11px] font-medium text-slate-500">{model}</p>
+                            )}
+                          </div>
+                          
+                          <div className="mt-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-base font-extrabold text-[#0f1a2e]">
+                                {formatPrice(Number(p.price ?? 0))}
+                              </span>
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${stock > 0 ? "bg-green-50 text-green-700 border border-green-200/50" : "bg-red-50 text-red-700 border border-red-200/50"}`}>
                                 {stock > 0 ? "In stock" : "Out"}
                               </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveProduct(p);
+                                }}
+                                className="flex-1 cursor-pointer py-2 px-3 rounded-xl border border-slate-200 hover:border-[#c8a84b]/50 hover:bg-[#c8a84b]/5 text-center text-xs font-bold text-slate-700 hover:text-[#0f1a2e] transition-all duration-300 flex items-center justify-center gap-1.5"
+                              >
+                                <Eye size={14} />
+                                View Details
+                              </button>
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                              >
+                                <AddToCartButton product={p} size={18} className="h-9 w-9 flex items-center justify-center" />
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -827,9 +855,9 @@ function ShopBySportPageContent() {
         </section>
       </main>
 
-      {isLockedToRequestedSport && activeProduct && (
+      {activeProduct && (
         <div
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-label="Product details"
@@ -866,22 +894,24 @@ function ShopBySportPageContent() {
                   tabIndex={activeProductImageUrl ? 0 : undefined}
                   aria-label={activeProductImageUrl ? "Open image preview" : undefined}
                   onClick={() => {
-                    if (!activeProductImageUrl) return;
-                    window.open(activeProductImageUrl, "_blank", "noopener,noreferrer");
+                    if (activeProductImageUrl) {
+                      setZoomImageUrl(activeProductImageUrl);
+                    }
                   }}
                   onKeyDown={(e) => {
                     if (!activeProductImageUrl) return;
                     if (e.key !== "Enter" && e.key !== " ") return;
                     e.preventDefault();
-                    window.open(activeProductImageUrl, "_blank", "noopener,noreferrer");
+                    setZoomImageUrl(activeProductImageUrl);
                   }}
                 >
                   {activeProductImageUrl ? (
                     <ImageWithFallback
+                      key={activeProductImageUrl}
                       src={activeProductImageUrl}
                       alt={getName(activeProduct.equipment) || activeProduct.name || "Product"}
                       fill
-                      className="object-cover animate-pan-diagonal"
+                      className="object-cover animate-scale-in"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">No image</div>
@@ -1000,6 +1030,32 @@ function ShopBySportPageContent() {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {zoomImageUrl && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md cursor-zoom-out animate-fade-in"
+          onClick={() => setZoomImageUrl(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview zoom"
+        >
+          <button
+            type="button"
+            className="absolute top-6 right-6 z-10 rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20 transition-colors"
+            onClick={() => setZoomImageUrl(null)}
+            aria-label="Close zoom preview"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="relative max-h-[85vh] max-w-[90vw] w-full h-full flex items-center justify-center">
+            <img
+              src={zoomImageUrl}
+              alt="Zoomed product view"
+              className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl animate-scale-in"
+            />
           </div>
         </div>
       )}

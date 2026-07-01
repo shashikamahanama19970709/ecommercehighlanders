@@ -10,7 +10,7 @@ import { useSession } from "next-auth/react";
 import type { Brand, Product, Sport } from "@/types/product";
 import { LogoLoader } from "@/components/logo-loader";
 import ImageWithFallback from "@/components/image-with-fallback";
-import { Sparkles, Search, ShoppingBag, X } from "lucide-react";
+import { Sparkles, Search, ShoppingBag, X, Eye } from "lucide-react";
 
 function getProductImage(p: Product): string | undefined {
   return p.featureImageUrl || (Array.isArray(p.imageUrls) ? p.imageUrls[0] : undefined) || p.images?.[0];
@@ -100,6 +100,7 @@ function BestSellingPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [activeProductImageUrl, setActiveProductImageUrl] = useState<string>("");
+  const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
 
   // Notify Me states
   const [notifyEmail, setNotifyEmail] = useState('');
@@ -176,9 +177,15 @@ function BestSellingPageContent() {
   }, [activeProduct]);
 
   useEffect(() => {
-    if (!activeProduct) return;
+    if (!activeProduct && !zoomImageUrl) return;
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActiveProduct(null);
+      if (e.key === "Escape") {
+        if (zoomImageUrl) {
+          setZoomImageUrl(null);
+        } else {
+          setActiveProduct(null);
+        }
+      }
     };
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -187,7 +194,7 @@ function BestSellingPageContent() {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [activeProduct]);
+  }, [activeProduct, zoomImageUrl]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -451,40 +458,65 @@ function BestSellingPageContent() {
                       <article
                         key={p._id}
                         onClick={() => setActiveProduct(p)}
-                        className="group flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer"
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter" && e.key !== " ") return;
+                          e.preventDefault();
+                          setActiveProduct(p);
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        className="group text-left overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-[#c8a84b]/20 cursor-pointer flex flex-col justify-between"
                       >
-                        <div className="relative h-44 w-full bg-slate-50">
+                        <div className="relative h-40 w-full bg-slate-50/50 overflow-hidden">
                           {img ? (
-                             <ImageWithFallback
-                               src={img}
-                               alt={imageAlt}
-                               fill
-                               className="object-cover transition-transform duration-300 group-hover:scale-102"
-                             />
+                            <ImageWithFallback
+                              src={img}
+                              alt={imageAlt}
+                              fill
+                              className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No Image</div>
+                            <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground bg-slate-50">No image</div>
                           )}
                         </div>
-                        <div className="flex flex-col flex-1 p-5 space-y-2 text-left">
-                          <div className="flex items-center justify-between">
-                            <h3 className="truncate text-base font-bold text-[#0f1a2e]">{brandLabel}</h3>
-                            <div onClick={(e) => e.stopPropagation()}>
-                              <AddToCartButton product={p} size={16} />
-                            </div>
+                        <div className="flex-1 p-5 flex flex-col justify-between">
+                          <div className="space-y-1.5">
+                            {brandLabel && (
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-[#c8a84b]">{brandLabel}</p>
+                            )}
+                            <h3 className="truncate text-sm font-bold text-[#0f1a2e] tracking-tight">{modelLabel || brandLabel || "Product"}</h3>
                           </div>
-                          <p className="truncate text-xs font-semibold text-slate-500">{modelLabel}</p>
-                          <div className="flex items-center justify-between gap-3 pt-2 mt-auto">
-                            <span className="text-sm font-black text-[#0f1a2e]">
-                              {formatPrice(price)}
-                              <span className="ml-1 text-[10px] text-slate-400 font-semibold">{selectedCurrency.code}</span>
-                            </span>
-                            <span
-                              className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                                stock > 0 ? "bg-green-50 text-green-700 border border-green-100" : "bg-red-50 text-red-700 border border-red-100"
-                              }`}
-                            >
-                              {stock > 0 ? "In Stock" : "Out of stock"}
-                            </span>
+                          
+                          <div className="mt-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-base font-extrabold text-[#0f1a2e]">
+                                {formatPrice(price)}
+                                <span className="ml-1 text-[10px] text-slate-400 font-semibold">{selectedCurrency.code}</span>
+                              </span>
+                              <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${stock > 0 ? "bg-green-50 text-green-700 border border-green-200/50" : "bg-red-50 text-red-700 border border-red-200/50"}`}>
+                                {stock > 0 ? "In stock" : "Out"}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 pt-1">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveProduct(p);
+                                }}
+                                className="flex-1 cursor-pointer py-2 px-3 rounded-xl border border-slate-200 hover:border-[#c8a84b]/50 hover:bg-[#c8a84b]/5 text-center text-xs font-bold text-slate-700 hover:text-[#0f1a2e] transition-all duration-300 flex items-center justify-center gap-1.5"
+                              >
+                                <Eye size={14} />
+                                View Details
+                              </button>
+                              <div
+                                onClick={(e) => e.stopPropagation()}
+                                onKeyDown={(e) => e.stopPropagation()}
+                              >
+                                <AddToCartButton product={p} size={18} className="h-9 w-9 flex items-center justify-center" />
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </article>
@@ -535,13 +567,30 @@ function BestSellingPageContent() {
             <div className="grid gap-6 md:grid-cols-2">
               {/* Left Column: Image Gallery */}
               <div className="space-y-4">
-                <div className="relative h-64 sm:h-80 w-full overflow-hidden rounded-2xl bg-slate-50 border">
+                <div
+                  className={`relative h-64 sm:h-80 w-full overflow-hidden rounded-2xl bg-slate-50 border ${activeProductImageUrl ? "cursor-zoom-in" : ""}`}
+                  role={activeProductImageUrl ? "button" : undefined}
+                  tabIndex={activeProductImageUrl ? 0 : undefined}
+                  aria-label={activeProductImageUrl ? "Open image preview" : undefined}
+                  onClick={() => {
+                    if (activeProductImageUrl) {
+                      setZoomImageUrl(activeProductImageUrl);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (!activeProductImageUrl) return;
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    setZoomImageUrl(activeProductImageUrl);
+                  }}
+                >
                   {activeProductImageUrl ? (
                      <ImageWithFallback
+                       key={activeProductImageUrl}
                        src={activeProductImageUrl}
                        alt={activeProduct.name || "Product image"}
                        fill
-                       className="object-contain"
+                       className="object-contain animate-scale-in"
                      />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-xs text-slate-400">No product image</div>
@@ -664,6 +713,32 @@ function BestSellingPageContent() {
               </div>
 
             </div>
+          </div>
+        </div>
+      )}
+
+      {zoomImageUrl && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md cursor-zoom-out animate-fade-in"
+          onClick={() => setZoomImageUrl(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Image preview zoom"
+        >
+          <button
+            type="button"
+            className="absolute top-6 right-6 z-10 rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20 transition-colors"
+            onClick={() => setZoomImageUrl(null)}
+            aria-label="Close zoom preview"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <div className="relative max-h-[85vh] max-w-[90vw] w-full h-full flex items-center justify-center">
+            <img
+              src={zoomImageUrl}
+              alt="Zoomed product view"
+              className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl animate-scale-in"
+            />
           </div>
         </div>
       )}
