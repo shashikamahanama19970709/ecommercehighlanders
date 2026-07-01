@@ -233,18 +233,18 @@ export default function AdminBrandsPage() {
               <tbody className="divide-y divide-slate-100 bg-white">
                 {paginatedBrands.map((brand) => (
                   <tr key={brand._id} className="hover:bg-slate-50/50 transition-colors">
-                    <td className="py-4 whitespace-nowrap">
-                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center overflow-hidden border border-slate-200/50">
+                    <td className="py-3 whitespace-nowrap">
+                      <div className="w-20 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden border border-slate-100 p-1 shadow-sm">
                         {brand.logoUrl ? (
                           <Image
                             src={brand.logoUrl}
                             alt={brand.name}
-                            width={40}
-                            height={40}
-                            className="object-cover"
+                            width={80}
+                            height={48}
+                            className="w-full h-full object-contain"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.name)}&background=0f1a2e&color=ffffff&size=40&font-size=0.6`;
+                              target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(brand.name)}&background=0f1a2e&color=ffffff&size=80&font-size=0.6`;
                             }}
                           />
                         ) : (

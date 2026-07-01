@@ -26,6 +26,10 @@ export default function AdminSportsPage() {
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [notice, setNotice] = useState<Notice>(null);
 
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
   const { control, handleSubmit, reset, setValue, clearErrors, watch, getValues, formState: { errors } } = useForm<SportFormData>({
     resolver: zodResolver(sportSchema),
     defaultValues: {
@@ -41,6 +45,18 @@ export default function AdminSportsPage() {
   useEffect(() => {
     fetchSports();
   }, []);
+
+  // Adjust pagination if the items count changes (e.g., after deletion)
+  useEffect(() => {
+    const totalPages = Math.ceil(sports.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    }
+  }, [sports.length, currentPage]);
+
+  const totalPages = Math.ceil(sports.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedSports = sports.slice(startIndex, startIndex + itemsPerPage);
 
   const fetchSports = async () => {
     const response = await fetch('/api/sports');
@@ -219,67 +235,115 @@ export default function AdminSportsPage() {
 
         {/* Sports Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {sports.map((sport) => (
+          {paginatedSports.map((sport) => (
             <div
               key={sport._id}
-              className="group relative overflow-hidden rounded-xl bg-white/80 backdrop-blur-sm p-6 shadow-lg transition-all hover:-translate-y-1 hover:shadow-xl"
+              className="group relative flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm hover:shadow-md transition-all duration-300"
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center overflow-hidden">
-                  <Image
-                    src={sport.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(sport.name)}&background=6366f1&color=ffffff&size=48&font-size=0.6`}
-                    alt={sport.name}
-                    width={48}
-                    height={48}
-                    className="object-cover"
-                    onError={(e) => {
-                      // Fallback to avatar placeholder
-                      const target = e.target as HTMLImageElement;
-                      target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(sport.name)}&background=6366f1&color=ffffff&size=48&font-size=0.6`;
-                    }}
-                  />
-                </div>
-                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* Image Section */}
+              <div className="relative h-44 w-full bg-slate-50 overflow-hidden">
+                <Image
+                  src={sport.imageUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(sport.name)}&background=0f1a2e&color=ffffff&size=200`}
+                  alt={sport.name}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(sport.name)}&background=0f1a2e&color=ffffff&size=200`;
+                  }}
+                />
+                
+                {/* Floating Edit/Delete Actions (top right) */}
+                <div className="absolute right-3 top-3 flex gap-1 bg-white/90 backdrop-blur-sm rounded-lg p-1.5 shadow-sm border border-slate-100/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <button
                     onClick={() => handleEdit(sport)}
-                    className="cursor-pointer p-1 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50"
+                    className="cursor-pointer p-1.5 rounded-md text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    title="Edit Sport"
                   >
                     <Edit className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => sport._id && handleDelete(sport._id)}
-                    className="cursor-pointer p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50"
+                    className="cursor-pointer p-1.5 rounded-md text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                    title="Delete Sport"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
 
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{sport.name}</h3>
-
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">
-                  {sport.equipmentTypes.length} equipment type{sport.equipmentTypes.length !== 1 ? 's' : ''}
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {sport.equipmentTypes.slice(0, 3).map((type, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800"
-                    >
-                      {type}
-                    </span>
-                  ))}
-                  {sport.equipmentTypes.length > 3 && (
-                    <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
-                      +{sport.equipmentTypes.length - 3} more
-                    </span>
-                  )}
+              {/* Card Body */}
+              <div className="p-5 flex-1 flex flex-col">
+                <h3 className="text-base font-bold text-[#0f1a2e] mb-1.5 tracking-tight">{sport.name}</h3>
+                
+                <div className="space-y-3 flex-1 flex flex-col justify-between">
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    {sport.equipmentTypes.length} equipment type{sport.equipmentTypes.length !== 1 ? 's' : ''}
+                  </p>
+                  
+                  <div className="flex flex-wrap gap-1">
+                    {sport.equipmentTypes.slice(0, 3).map((type, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex items-center rounded-full bg-slate-50 border border-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600"
+                      >
+                        {type}
+                      </span>
+                    ))}
+                    {sport.equipmentTypes.length > 3 && (
+                      <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">
+                        +{sport.equipmentTypes.length - 3} more
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
+            <p className="text-xs font-semibold text-slate-500">
+              Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to{" "}
+              <span className="font-bold text-slate-800">
+                {Math.min(startIndex + itemsPerPage, sports.length)}
+              </span>{" "}
+              of <span className="font-bold text-slate-800">{sports.length}</span> sports
+            </p>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="inline-flex h-8 px-3 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer"
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    currentPage === page
+                      ? "bg-[#0f1a2e] text-white shadow"
+                      : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="inline-flex h-8 px-3 items-center justify-center rounded-lg border border-slate-200 bg-white text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Modal */}
         {isModalOpen && (

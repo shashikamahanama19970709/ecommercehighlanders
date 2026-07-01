@@ -109,6 +109,7 @@ function ShopBySportPageContent() {
 
   const hasAppliedInitialSelection = useRef(false);
   const lastRequestedSportId = useRef<string>('');
+  const hasAppliedInitialBrand = useRef(false);
 
   const [sports, setSports] = useState<Sport[]>([]);
   const [moduleDoc, setModuleDoc] = useState<ShopBySportModule | null>(null);
@@ -294,11 +295,25 @@ function ShopBySportPageContent() {
   }, [selectedSportId]);
 
   useEffect(() => {
-    setEquipmentTypeFilter("");
-    setBrandFilterId("");
-    setSpecKeyFilter("");
-    setSpecValueFilter("");
-  }, [selectedSportId]);
+    if (hasAppliedInitialBrand.current) {
+      setEquipmentTypeFilter("");
+      setBrandFilterId("");
+      setSpecKeyFilter("");
+      setSpecValueFilter("");
+      setPriceMin("");
+      setPriceMax("");
+      setSpecFilters({});
+    } else {
+      const brandId = searchParams.get('brandId');
+      if (brandId && brands.length > 0) {
+        const brandObj = brands.find(b => b._id === brandId);
+        if (brandObj) {
+          setBrandFilterId(brandId);
+          hasAppliedInitialBrand.current = true;
+        }
+      }
+    }
+  }, [selectedSportId, brands, searchParams]);
 
   useEffect(() => {
     if (!activeProduct) {
@@ -339,6 +354,10 @@ function ShopBySportPageContent() {
     const entry = entries.find((e) => getSportId(e?.sport) === selectedSportId);
     return typeof entry?.heroImageUrl === 'string' && entry.heroImageUrl.trim() ? entry.heroImageUrl : undefined;
   }, [moduleDoc, selectedSportId]);
+
+  const sportImageUrl = useMemo(() => {
+    return sportsById.get(selectedSportId)?.imageUrl;
+  }, [selectedSportId, sportsById]);
 
   const fallbackHeroUrl = useMemo(() => {
     const first = products[0];
@@ -558,10 +577,22 @@ function ShopBySportPageContent() {
                   <div className="relative h-56 w-full">
                     {heroImageUrl ? (
                       <Image src={heroImageUrl} alt={selectedSportName} fill className="object-cover" />
+                    ) : sportImageUrl ? (
+                      <Image src={sportImageUrl} alt={selectedSportName} fill className="object-cover" />
                     ) : fallbackHeroUrl ? (
                       <Image src={fallbackHeroUrl} alt={selectedSportName} fill className="object-cover" />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">No hero image</div>
+                      <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#0f1a2e] to-[#1b2b45] p-6 relative overflow-hidden">
+                        <div className="absolute -left-10 -top-10 h-40 w-40 rounded-full bg-[#c8a84b]/10 blur-2xl pointer-events-none" />
+                        <div className="absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-[#c8a84b]/5 blur-2xl pointer-events-none" />
+                        <div className="opacity-15 mb-2">
+                          <svg viewBox="0 0 80 80" className="h-16 w-16 fill-white">
+                            <polygon points="6,62 26,18 46,62" />
+                            <polygon points="24,62 44,8 64,62" opacity="0.85" />
+                          </svg>
+                        </div>
+                        <p className="text-[10px] font-bold tracking-[0.25em] uppercase text-white/30">Highlanders Sports</p>
+                      </div>
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/20 to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-6">
@@ -571,8 +602,7 @@ function ShopBySportPageContent() {
                   </div>
                 </div>
               )}
-
-              {isLockedToRequestedSport && (
+              {selectedSportId && (
                 <div className="rounded-2xl border bg-background p-4 sm:p-6">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -687,7 +717,7 @@ function ShopBySportPageContent() {
                 ) : filteredProducts.length === 0 ? (
                   <div className="col-span-full rounded-2xl border border-dashed bg-muted p-10 text-center text-sm text-muted-foreground">No products for this sport.</div>
                 ) : (
-                  (isLockedToRequestedSport ? filteredProducts : filteredProducts.slice(0, 8)).map((p) => {
+                  filteredProducts.map((p) => {
                     const img = getProductImage(p);
                     const equipmentName = getName(p.equipment) || p.name || "Product";
                     const brandName = getName(p.brand) || "";
