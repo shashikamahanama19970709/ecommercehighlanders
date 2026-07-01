@@ -208,25 +208,28 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
                 }
               }}
             >
-              <div className="relative overflow-hidden rounded-none p-6 transition hover:-translate-y-1">
-                <div className="flex flex-col items-center text-center space-y-3">
-                  <div className="flex h-40 w-40 items-center justify-center">
-                    {sport.imageUrl ? (
-                      <Image
-                        src={sport.imageUrl}
-                        alt={sport.name}
-                        width={128}
-                        height={128}
-                        className="object-cover"
-                        draggable={false}
-                      />
-                    ) : (
-                      <div className="flex h-32 w-32 items-center justify-center text-foreground text-xl font-bold">
-                        {sport.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="text-xl font-semibold text-foreground">{sport.name}</h3>
+              <div className="relative flex flex-col overflow-hidden rounded-2xl bg-white border border-slate-100 p-3 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300">
+                {/* Image Section */}
+                <div className="relative h-32 w-full bg-slate-50 overflow-hidden rounded-xl">
+                  {sport.imageUrl ? (
+                    <Image
+                      src={sport.imageUrl}
+                      alt={sport.name}
+                      fill
+                      sizes="208px"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      draggable={false}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center bg-slate-100 text-[#0f1a2e] text-xl font-bold">
+                      {sport.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+
+                {/* Body Section */}
+                <div className="pt-3 pb-1 text-center">
+                  <h3 className="text-sm font-bold text-[#0f1a2e] tracking-tight group-hover:text-[#c8a84b] transition-colors line-clamp-1">{sport.name}</h3>
                 </div>
               </div>
             </Link>
