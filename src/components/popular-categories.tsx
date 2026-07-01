@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import ImageWithFallback from './image-with-fallback';
 import type { Sport } from '@/types/product';
 
 interface PopularCategoriesProps {
@@ -212,7 +212,7 @@ export function PopularCategories({ sports }: PopularCategoriesProps) {
                 {/* Image Section */}
                 <div className="relative h-32 w-full bg-slate-50 overflow-hidden rounded-xl">
                   {sport.imageUrl ? (
-                    <Image
+                    <ImageWithFallback
                       src={sport.imageUrl}
                       alt={sport.name}
                       fill

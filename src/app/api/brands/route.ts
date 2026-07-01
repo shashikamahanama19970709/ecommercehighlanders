@@ -43,35 +43,14 @@ export async function GET(request: NextRequest) {
       .populate('associatedSports', 'name _id')
       .sort({ name: 1 });
 
-    // Generate signed URLs for logos
-    if (s3Client) {
-      const brandsWithSignedUrls = await Promise.all(
-        brands.map(async (brand) => {
-          let logoUrl;
-          if (brand.logoKey) {
-            logoUrl = await getSignedUrl(
-              s3Client,
-              new GetObjectCommand({
-                Bucket: b2Bucket,
-                Key: brand.logoKey,
-              }),
-              { expiresIn: 3600 } // 1 hour
-            );
-          } else {
-            // For old brands with logoUrl as direct URL
-            logoUrl = brand.logoUrl;
-          }
-          return {
-            ...brand.toObject(),
-            logoUrl,
-          };
-        })
-      );
-      return NextResponse.json(brandsWithSignedUrls);
-    } else {
-      // If no s3Client, return brands with existing logoUrl
-      return NextResponse.json(brands);
-    }
+    // Resolve proxy URLs for logos
+    const brandsWithUrls = brands.map((brand) => {
+      return {
+        ...brand.toObject(),
+        logoUrl: brand.logoKey ? `/api/upload?key=${encodeURIComponent(brand.logoKey)}` : brand.logoUrl,
+      };
+    });
+    return NextResponse.json(brandsWithUrls);
   } catch (error) {
     console.error('Error fetching brands:', error);
     return NextResponse.json({ message: 'Error fetching brands' }, { status: 500 });
@@ -94,22 +73,9 @@ export async function POST(request: NextRequest) {
     const savedBrand = await brand.save();
     await savedBrand.populate('associatedSports', 'name _id');
 
-    // Generate signed URL for the new brand
-    let logoUrl;
-    if (s3Client && savedBrand.logoKey) {
-      logoUrl = await getSignedUrl(
-        s3Client,
-        new GetObjectCommand({
-          Bucket: b2Bucket,
-          Key: savedBrand.logoKey,
-        }),
-        { expiresIn: 3600 }
-      );
-    }
-
     return NextResponse.json({
       ...savedBrand.toObject(),
-      logoUrl,
+      logoUrl: savedBrand.logoKey ? `/api/upload?key=${encodeURIComponent(savedBrand.logoKey)}` : undefined,
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating brand:', error);

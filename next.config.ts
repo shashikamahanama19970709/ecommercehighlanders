@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         hostname: '*.backblazeb2.com',
       },
     ],
+    localPatterns: [
+      {
+        pathname: '/**',
+      },
+    ],
     // Increase cache time for external images
     minimumCacheTTL: 3600, // 1 hour
     // Allow SVG images

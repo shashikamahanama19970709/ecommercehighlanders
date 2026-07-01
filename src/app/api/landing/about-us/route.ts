@@ -29,15 +29,8 @@ const s3Client =
     : null;
 
 async function signKey(key?: string): Promise<string | undefined> {
-  if (!s3Client || !b2Bucket || !key) return undefined;
-  return getSignedUrl(
-    s3Client,
-    new GetObjectCommand({
-      Bucket: b2Bucket,
-      Key: key,
-    }),
-    { expiresIn: 3600 }
-  );
+  if (!key) return undefined;
+  return `/api/upload?key=${encodeURIComponent(key)}`;
 }
 
 // GET /api/landing/about-us

@@ -1,13 +1,13 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingCart } from 'lucide-react';
 import { AddToCartButton } from '@/components/add-to-cart-button';
 import { useCurrency } from '@/lib/currency-context';
 import type { ShopBySportEntry, ShopBySportModule } from '@/types/shop-by-sport';
-import type { Product } from '@/types/product';
+import type { Product, Sport } from '@/types/product';
 
 function getName(value: unknown): string {
   if (!value) return '';
@@ -40,18 +40,54 @@ function getProductImage(p: Product): string | undefined {
 
 type Props = {
   moduleDoc: ShopBySportModule | null;
+  sports?: Sport[];
 };
 
-export function ShopBySportLandingSection({ moduleDoc }: Props) {
+export function ShopBySportLandingSection({ moduleDoc, sports }: Props) {
   const { formatPrice, selectedCurrency } = useCurrency();
+
+  const fallbackEntries = useMemo(() => {
+    return (sports || []).map((sport) => ({
+      sport,
+      heroImageKey: sport.imageKey,
+      heroImageUrl: sport.imageKey ? `/api/upload?key=${encodeURIComponent(sport.imageKey)}` : undefined,
+      productIds: [],
+      products: [],
+    })) as unknown as ShopBySportEntry[];
+  }, [sports]);
+
   const entries = useMemo(() => {
-    return Array.isArray(moduleDoc?.entries) ? moduleDoc!.entries : [];
-  }, [moduleDoc]);
+    const raw = Array.isArray(moduleDoc?.entries) ? moduleDoc!.entries : [];
+    const filtered = raw.filter((entry) => {
+      const name = getName(entry?.sport);
+      return typeof name === 'string' && name.trim() !== '';
+    });
+
+    if (filtered.length === 0) {
+      return fallbackEntries;
+    }
+    return filtered;
+  }, [moduleDoc, fallbackEntries]);
 
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [heroImageError, setHeroImageError] = useState(false);
 
   const safeSelectedIndex = Math.min(selectedIndex, Math.max(entries.length - 1, 0));
   const selectedEntry = entries[safeSelectedIndex];
+
+  // Reset image error state when selection changes
+  useEffect(() => {
+    setHeroImageError(false);
+  }, [selectedEntry]);
+
+  const sportImageUrl = useMemo(() => {
+    if (!selectedEntry?.sport || typeof selectedEntry.sport === 'string') return undefined;
+    return (selectedEntry.sport as any).imageUrl;
+  }, [selectedEntry]);
+
+  const activeHeroUrl = useMemo(() => {
+    return selectedEntry?.heroImageUrl || sportImageUrl;
+  }, [selectedEntry, sportImageUrl]);
 
   const selectedSportName = selectedEntry ? getName(selectedEntry.sport) || 'Sport' : '';
   const selectedSportId = selectedEntry ? getSportId(selectedEntry.sport) : '';
@@ -71,7 +107,7 @@ export function ShopBySportLandingSection({ moduleDoc }: Props) {
 
       <div className="grid items-start gap-6 lg:grid-cols-[280px_1fr]">
         {/* Left selector */}
-        <div className="h-fit self-start rounded-none bg-muted/40 p-4 shadow-sm">
+        <div className="h-fit self-start rounded-2xl bg-white border border-slate-100 p-4 shadow-sm">
           <div className="space-y-2">
             {entries.map((entry, idx) => {
               const name = getName(entry.sport) || `Sport ${idx + 1}`;
@@ -83,13 +119,13 @@ export function ShopBySportLandingSection({ moduleDoc }: Props) {
                   type="button"
                   onClick={() => setSelectedIndex(idx)}
                   className={
-                    `cursor-pointer flex w-full items-center gap-3 rounded-none px-4 py-3 text-left text-sm transition-colors transition-shadow ` +
+                    `cursor-pointer flex w-full items-center gap-3 rounded-xl px-4 py-3.5 text-left text-sm transition-all duration-300 border-l-4 ` +
                     (isActive
-                      ? 'bg-blue-50 shadow-md dark:bg-blue-950/30'
-                      : 'bg-transparent hover:bg-red-50 hover:shadow-sm dark:hover:bg-red-950/20')
+                      ? 'bg-[#0f1a2e] text-[#c8a84b] border-[#c8a84b] shadow-md'
+                      : 'bg-white text-slate-700 border-transparent hover:bg-[#0f1a2e]/5 hover:border-[#0f1a2e]/20 hover:shadow-sm')
                   }
                 >
-                  <span className={`truncate ${isActive ? 'font-semibold text-foreground' : 'font-medium text-foreground'}`}
+                  <span className={`truncate font-semibold ${isActive ? 'text-[#c8a84b]' : 'text-slate-700'}`}
                     >
                     {name}
                   </span>
@@ -102,10 +138,27 @@ export function ShopBySportLandingSection({ moduleDoc }: Props) {
         {/* Right hero */}
         <div className="relative z-0 overflow-hidden rounded-none border-0 bg-muted shadow-lg">
           <div className="relative h-80 w-full sm:h-[440px] lg:h-[520px]">
-            {selectedEntry?.heroImageUrl ? (
-              <Image src={selectedEntry.heroImageUrl} alt={selectedSportName} fill className="object-cover" />
+            {activeHeroUrl && !heroImageError ? (
+              <Image
+                src={activeHeroUrl}
+                alt={selectedSportName}
+                fill
+                className="object-cover"
+                onError={() => setHeroImageError(true)}
+              />
             ) : (
-              <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">No hero image</div>
+              <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#0f1a2e] to-[#1b2b45] p-10 relative overflow-hidden">
+                <div className="absolute -left-20 -top-20 h-64 w-64 rounded-full bg-[#c8a84b]/10 blur-3xl pointer-events-none" />
+                <div className="absolute -right-20 -bottom-20 h-64 w-64 rounded-full bg-[#1e3a5f]/50 blur-3xl pointer-events-none" />
+                <div className="opacity-15 mb-4 transform scale-125">
+                  <svg viewBox="0 0 80 80" className="h-20 w-20 fill-white">
+                    <polygon points="6,62 26,18 46,62" />
+                    <polygon points="24,62 44,8 64,62" opacity="0.85" />
+                  </svg>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-[#c8a84b]/80 mb-1">Highlanders Sports</span>
+                <h3 className="text-xl font-black text-white tracking-wider uppercase">{selectedSportName}</h3>
+              </div>
             )}
             <div className="absolute inset-0 bg-black/25" />
 
@@ -185,9 +238,9 @@ export function ShopBySportLandingSection({ moduleDoc }: Props) {
               return (
                 <article
                   key={p._id}
-                  className="group overflow-hidden rounded-none bg-background shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                  className="group overflow-hidden rounded-2xl bg-white border border-slate-100 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
                 >
-                  <div className="relative h-40 w-full bg-muted sm:h-44">
+                  <div className="relative h-40 w-full bg-slate-50 overflow-hidden sm:h-44">
                     {img ? (
                       <Image
                         src={img}

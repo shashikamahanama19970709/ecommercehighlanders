@@ -34,31 +34,14 @@ export async function GET() {
 
     const sports = await Sport.find().sort({ name: 1 }).maxTimeMS(8000);
 
-    // Generate signed URLs for images
-    if (s3Client) {
-      const sportsWithSignedUrls = await Promise.all(
-        sports.map(async (sport) => {
-          let imageUrl;
-          if (sport.imageKey) {
-            imageUrl = await getSignedUrl(
-              s3Client,
-              new GetObjectCommand({
-                Bucket: b2Bucket,
-                Key: sport.imageKey,
-              }),
-              { expiresIn: 3600 } // 1 hour
-            );
-          }
-          return {
-            ...sport.toObject(),
-            imageUrl,
-          };
-        })
-      );
-      return NextResponse.json(sportsWithSignedUrls);
-    } else {
-      return NextResponse.json(sports);
-    }
+    // Resolve proxy URLs for images
+    const sportsWithUrls = sports.map((sport) => {
+      return {
+        ...sport.toObject(),
+        imageUrl: sport.imageKey ? `/api/upload?key=${encodeURIComponent(sport.imageKey)}` : undefined,
+      };
+    });
+    return NextResponse.json(sportsWithUrls);
   } catch (error) {
     console.error('Error fetching sports:', error);
     return NextResponse.json({ error: 'Failed to fetch sports' }, { status: 500 });
@@ -86,22 +69,9 @@ export async function POST(request: NextRequest) {
 
     await sport.save();
 
-    // Generate signed URL for the new sport
-    let imageUrl;
-    if (s3Client && sport.imageKey) {
-      imageUrl = await getSignedUrl(
-        s3Client,
-        new GetObjectCommand({
-          Bucket: b2Bucket,
-          Key: sport.imageKey,
-        }),
-        { expiresIn: 3600 }
-      );
-    }
-
     return NextResponse.json({
       ...sport.toObject(),
-      imageUrl,
+      imageUrl: sport.imageKey ? `/api/upload?key=${encodeURIComponent(sport.imageKey)}` : undefined,
     }, { status: 201 });
   } catch (error) {
     console.error('Error creating sport:', error);

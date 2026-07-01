@@ -1,176 +1,142 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import type { Brand } from '@/types/product';
+import type { Brand, Sport } from '@/types/product';
 import type { ShopBySportModule } from '@/types/shop-by-sport';
 
 type Props = {
   brands: Brand[];
   shopBySportModule: ShopBySportModule | null;
+  sports?: Sport[];
 };
 
-function getSportName(value: unknown): string {
-  if (!value) return 'Sport';
-  if (typeof value === 'string') return 'Sport';
-  const maybe = value as { name?: string };
-  return maybe.name?.trim() || 'Sport';
-}
-
-export function BrandsLandingSection({ brands, shopBySportModule }: Props) {
+export function BrandsLandingSection({ brands }: Props) {
   const publishedBrands = useMemo(() => {
     return (Array.isArray(brands) ? brands : []).filter((b) => b?.isPublished);
   }, [brands]);
 
-  const heroSlides = useMemo(() => {
-    const entries = Array.isArray(shopBySportModule?.entries) ? shopBySportModule!.entries : [];
-    return entries
-      .map((entry) => {
-        const heroImageUrl = entry.heroImageUrl;
-        if (!heroImageUrl) return null;
-        return {
-          heroImageUrl,
-          sportName: getSportName(entry.sport),
-        };
-      })
-      .filter((s): s is { heroImageUrl: string; sportName: string } => !!s);
-  }, [shopBySportModule]);
+  const marqueeBrands = useMemo(() => {
+    const list = [...publishedBrands];
+    if (list.length === 0) return [];
+    
+    // Multiply to fill screen width and loop nicely
+    const repeated = [];
+    while (repeated.length < 12) {
+      repeated.push(...list);
+    }
+    return repeated;
+  }, [publishedBrands]);
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [brandPage, setBrandPage] = useState(0);
-
-  useEffect(() => {
-    if (heroSlides.length <= 1) return;
-
-    const id = window.setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % heroSlides.length);
-    }, 4500);
-
-    return () => window.clearInterval(id);
-  }, [heroSlides.length]);
-
-  const brandsPerPage = 9;
-  const brandPages = Math.max(1, Math.ceil(publishedBrands.length / brandsPerPage));
-  const safeBrandPage = Math.min(brandPage, brandPages - 1);
-  const visibleBrands = publishedBrands.slice(
-    safeBrandPage * brandsPerPage,
-    safeBrandPage * brandsPerPage + brandsPerPage
-  );
-
-  const goToPrev = () => {
-    setBrandPage((prev) => (prev - 1 + brandPages) % brandPages);
-  };
-
-  const goToNext = () => {
-    setBrandPage((prev) => (prev + 1) % brandPages);
-  };
-
-  if (publishedBrands.length === 0 && heroSlides.length === 0) return null;
-
-  const safeActiveIndex = Math.min(activeIndex, Math.max(heroSlides.length - 1, 0));
+  if (publishedBrands.length === 0) return null;
 
   return (
-    <section>
-      <div className="grid gap-8 lg:grid-cols-[1fr_1.4fr] lg:grid-rows-[auto_1fr] lg:items-start">
-        {/* Left column: Row 1 (title + arrows) */}
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">Brands</h2>
-          {brandPages > 1 && (
-            <div className="flex gap-2">
-              <button
-                onClick={goToPrev}
-                className="rounded-full border border-border bg-background/80 p-2 backdrop-blur hover:bg-muted transition-colors"
-                aria-label="Previous brands"
-                type="button"
-              >
-                <ChevronLeft size={20} />
-              </button>
-              <button
-                onClick={goToNext}
-                className="rounded-full border border-border bg-background/80 p-2 backdrop-blur hover:bg-muted transition-colors"
-                aria-label="Next brands"
-                type="button"
-              >
-                <ChevronRight size={20} />
-              </button>
-            </div>
-          )}
-        </div>
+    <section className="relative w-full">
+      <style>{`
+        @keyframes marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+          display: flex;
+          gap: 1.5rem;
+          animation: marquee 25s linear infinite;
+        }
+        .animate-marquee:hover {
+          animation-play-state: paused;
+        }
+      `}</style>
 
-        {/* Right column: hero image spans both left rows */}
-        <div className="relative overflow-hidden bg-muted lg:row-span-2">
-          <div className="relative h-64 w-full sm:h-80 lg:h-[360px]">
-            {heroSlides.length > 0 ? (
-              heroSlides.map((slide, idx) => (
-                <div
-                  key={`${slide.heroImageUrl}-${idx}`}
-                  className={
-                    'absolute inset-0 transition-opacity duration-700 ease-in-out ' +
-                    (idx === safeActiveIndex ? 'opacity-100' : 'opacity-0')
-                  }
-                >
-                  <Image
-                    src={slide.heroImageUrl}
-                    alt={slide.sportName}
-                    fill
-                    className="object-cover"
-                    sizes="(min-width: 1024px) 60vw, 100vw"
-                    priority={idx === safeActiveIndex}
-                  />
-                  <div className="absolute inset-0 bg-black/10" />
-                </div>
-              ))
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                No hero images configured.
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Left column: Row 2 (3x3 brands + 4th row button) */}
+      {/* Header */}
+      <div className="mb-8 flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
         <div>
-          <div className="grid grid-cols-3 gap-4">
-            {visibleBrands.map((brand) => (
-              <div
-                key={brand._id}
-                className="flex h-16 items-center justify-center rounded-sm border border-border bg-background px-4"
-                title={brand.name}
+          <h2 className="text-xl font-bold tracking-tight text-[#0f1a2e] uppercase">Brands</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">Explore our premium authorized stockists catalog</p>
+        </div>
+      </div>
+
+      {/* Marquee Wrapper */}
+      <div className="relative w-full overflow-hidden py-4">
+        {/* Left and right fade overlay for premium styling */}
+        <div className="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+        
+        {/* Sliding track */}
+        <div className="flex w-max">
+          {/* First loop */}
+          <div className="animate-marquee pr-6">
+            {marqueeBrands.map((brand, idx) => (
+              <Link
+                key={`brand-l1-${brand._id}-${idx}`}
+                href={brand.associatedSports?.length > 0 
+                  ? `/shop-by-sport?sportId=${brand.associatedSports[0]._id}&brandId=${brand._id}` 
+                  : `/shop-by-sport?brandId=${brand._id}`
+                }
+                className="group flex w-44 h-20 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                title={`Shop ${brand.name}`}
               >
                 {brand.logoUrl ? (
                   <Image
                     src={brand.logoUrl}
                     alt={brand.name}
-                    width={120}
-                    height={44}
-                    className="max-h-10 w-auto object-contain"
+                    width={140}
+                    height={50}
+                    className="max-h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
                   />
                 ) : (
-                  <span className="text-xs font-medium text-foreground">{brand.name}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 text-[#0f1a2e] flex items-center justify-center text-xs font-bold group-hover:bg-[#0f1a2e] group-hover:text-white transition-colors duration-300">
+                      {brand.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 group-hover:text-[#c8a84b] transition-colors">{brand.name}</span>
+                  </div>
                 )}
-              </div>
+              </Link>
             ))}
-
-            {publishedBrands.length === 0 && (
-              <div className="col-span-full rounded-sm border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-                No published brands yet.
-              </div>
-            )}
-
-            {publishedBrands.length > 0 && (
-              <div className="col-span-3 flex justify-center pt-2">
-                <Link
-                  href="/brands"
-                  className="inline-flex items-center rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background hover:bg-foreground/90 transition-colors"
-                >
-                  View All Brands
-                </Link>
-              </div>
-            )}
+          </div>
+          {/* Second loop to create infinite track */}
+          <div className="animate-marquee pr-6" aria-hidden="true">
+            {marqueeBrands.map((brand, idx) => (
+              <Link
+                key={`brand-l2-${brand._id}-${idx}`}
+                href={brand.associatedSports?.length > 0 
+                  ? `/shop-by-sport?sportId=${brand.associatedSports[0]._id}&brandId=${brand._id}` 
+                  : `/shop-by-sport?brandId=${brand._id}`
+                }
+                className="group flex w-44 h-20 shrink-0 items-center justify-center rounded-2xl border border-slate-100 bg-white p-4 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                title={`Shop ${brand.name}`}
+              >
+                {brand.logoUrl ? (
+                  <Image
+                    src={brand.logoUrl}
+                    alt={brand.name}
+                    width={140}
+                    height={50}
+                    className="max-h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 text-[#0f1a2e] flex items-center justify-center text-xs font-bold group-hover:bg-[#0f1a2e] group-hover:text-white transition-colors duration-300">
+                      {brand.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-xs font-bold text-slate-700 group-hover:text-[#c8a84b] transition-colors">{brand.name}</span>
+                  </div>
+                )}
+              </Link>
+            ))}
           </div>
         </div>
+      </div>
+
+      {/* Centered button */}
+      <div className="mt-8 flex justify-center">
+        <Link
+          href="/brands"
+          className="cursor-pointer inline-flex items-center justify-center rounded-full bg-[#0f1a2e] px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-[#c8a84b] hover:bg-[#1e3a5f] hover:text-white transition-all duration-300 shadow-sm hover:shadow-md"
+        >
+          View All Brands
+        </Link>
       </div>
     </section>
   );

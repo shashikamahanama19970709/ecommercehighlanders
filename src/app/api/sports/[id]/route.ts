@@ -96,22 +96,9 @@ export async function PUT(
       return NextResponse.json({ error: 'Sport not found' }, { status: 404 });
     }
 
-    // Generate signed URL for the updated sport
-    let imageUrl;
-    if (s3Client && sport.imageKey) {
-      imageUrl = await getSignedUrl(
-        s3Client,
-        new GetObjectCommand({
-          Bucket: b2Bucket,
-          Key: sport.imageKey,
-        }),
-        { expiresIn: 3600 }
-      );
-    }
-
     return NextResponse.json({
       ...sport.toObject(),
-      imageUrl,
+      imageUrl: sport.imageKey ? `/api/upload?key=${encodeURIComponent(sport.imageKey)}` : undefined,
     });
   } catch (error) {
     console.error('Error updating sport:', error);

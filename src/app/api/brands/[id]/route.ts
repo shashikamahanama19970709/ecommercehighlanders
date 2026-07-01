@@ -86,24 +86,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ message: 'Brand not found' }, { status: 404 });
     }
 
-    // Generate signed URL
-    let logoUrl;
-    if (s3Client && updatedBrand.logoKey) {
-      logoUrl = await getSignedUrl(
-        s3Client,
-        new GetObjectCommand({
-          Bucket: b2Bucket,
-          Key: updatedBrand.logoKey,
-        }),
-        { expiresIn: 3600 }
-      );
-    } else {
-      logoUrl = updatedBrand.logoUrl;
-    }
-
     return NextResponse.json({
       ...updatedBrand.toObject(),
-      logoUrl,
+      logoUrl: updatedBrand.logoKey ? `/api/upload?key=${encodeURIComponent(updatedBrand.logoKey)}` : updatedBrand.logoUrl,
     });
   } catch (error) {
     console.error('Error updating brand:', error);

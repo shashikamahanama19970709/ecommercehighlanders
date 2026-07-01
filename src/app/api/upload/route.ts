@@ -113,3 +113,45 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+// GET /api/upload?key=... - retrieve and proxy file from Backblaze B2 private bucket
+export async function GET(request: NextRequest) {
+  if (!useB2) {
+    return new Response("Backblaze B2 not configured", { status: 500 });
+  }
+
+  const key = request.nextUrl.searchParams.get("key");
+  if (!key) {
+    return new Response("Missing key parameter", { status: 400 });
+  }
+
+  try {
+    const command = new GetObjectCommand({
+      Bucket: b2Bucket,
+      Key: key,
+    });
+
+    const response = await s3Client!.send(command);
+    const body = response.Body;
+
+    if (!body) {
+      return new Response("File body is empty", { status: 404 });
+    }
+
+    // Set cache headers to cache this proxy response for 1 year
+    const headers = new Headers();
+    headers.set("Content-Type", response.ContentType || "application/octet-stream");
+    headers.set("Cache-Control", "public, max-age=31536000, immutable");
+
+    return new Response(body as any, {
+      status: 200,
+      headers,
+    });
+  } catch (error: any) {
+    console.error("Error proxying file from B2:", error);
+    if (error.name === "NoSuchKey" || error.$metadata?.httpStatusCode === 404) {
+      return new Response("File not found", { status: 404 });
+    }
+    return new Response("Error retrieving file", { status: 500 });
+  }
+}

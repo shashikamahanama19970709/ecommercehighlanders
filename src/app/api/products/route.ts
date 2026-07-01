@@ -155,51 +155,18 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Generate signed URLs for images
-    if (s3Client) {
-      const productsWithSignedUrls = await Promise.all(
-        products.map(async (product) => {
-          const productObj = product.toObject();
-          let featureImageUrl;
-          let imageUrls = [];
-
-          if (product.featureImageKey) {
-            featureImageUrl = await getSignedUrl(
-              s3Client,
-              new GetObjectCommand({
-                Bucket: b2Bucket,
-                Key: product.featureImageKey,
-              }),
-              { expiresIn: 3600 } // 1 hour
-            );
-          }
-
-          if (product.imageKeys && product.imageKeys.length > 0) {
-            imageUrls = await Promise.all(
-              product.imageKeys.map((key: string) =>
-                getSignedUrl(
-                  s3Client,
-                  new GetObjectCommand({
-                    Bucket: b2Bucket,
-                    Key: key,
-                  }),
-                  { expiresIn: 3600 }
-                )
-              )
-            );
-          }
-
-          return {
-            ...productObj,
-            featureImageUrl,
-            imageUrls,
-          };
-        })
-      );
-      return NextResponse.json(productsWithSignedUrls);
-    } else {
-      return NextResponse.json(products);
-    }
+    // Resolve proxy URLs for images
+    const productsWithUrls = products.map((product) => {
+      const productObj = product.toObject();
+      return {
+        ...productObj,
+        featureImageUrl: product.featureImageKey ? `/api/upload?key=${encodeURIComponent(product.featureImageKey)}` : undefined,
+        imageUrls: Array.isArray(product.imageKeys)
+          ? product.imageKeys.map((key: string) => `/api/upload?key=${encodeURIComponent(key)}`)
+          : [],
+      };
+    });
+    return NextResponse.json(productsWithUrls);
   } catch (error) {
     console.error('Error fetching products:', error);
     return NextResponse.json({ message: 'Error fetching products' }, { status: 500 });
