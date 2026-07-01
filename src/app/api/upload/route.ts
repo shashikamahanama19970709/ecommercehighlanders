@@ -9,7 +9,7 @@ const b2Endpoint = process.env.B2_ENDPOINT; // e.g. https://s3.us-west-002.backb
 const b2Bucket = process.env.B2_BUCKET_NAME;
 const b2Region = process.env.B2_REGION || "us-west-002";
 const b2KeyId = process.env.B2_KEY_ID;
-const b2AppKey = process.env.B2_APPLICATION_KEY;
+const b2AppKey = process.env.B2_S3_APPLICATION_KEY;
 
 const s3Client =
   b2Endpoint && b2Bucket && b2KeyId && b2AppKey &&
