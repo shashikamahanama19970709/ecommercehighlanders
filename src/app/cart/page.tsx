@@ -5,7 +5,7 @@ import { useCurrency } from '@/lib/currency-context';
 import Image from 'next/image';
 import ImageWithFallback from '@/components/image-with-fallback';
 import Link from 'next/link';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Minus, Plus, Trash2, ArrowLeft } from 'lucide-react';
 
 export default function CartPage() {
   const { items, updateQuantity, removeFromCart, total } = useCart();
@@ -31,9 +31,20 @@ export default function CartPage() {
   }
 
   return (
-    <div className="flex-1">
-      <div className="mx-auto w-full max-w-4xl px-6 py-16">
-        <h1 className="text-2xl font-semibold text-foreground">Shopping Cart</h1>
+    <div className="flex-1 bg-[#f8fafc] min-h-[85vh]">
+      <div className="mx-auto w-full max-w-4xl px-6 py-8">
+        <div className="mb-6">
+          <Link
+            href="/"
+            className="group inline-flex items-center gap-2 text-sm font-medium text-[#64748b] transition-colors hover:text-[#0f1a2e]"
+          >
+            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            <span className="hidden sm:inline">Continue Shopping</span>
+            <span className="sm:hidden">Back</span>
+          </Link>
+        </div>
+
+        <h1 className="text-2xl font-bold text-[#0f1a2e]">Shopping Cart</h1>
 
         <div className="mt-8 space-y-4">
           {items.map((item) => (
