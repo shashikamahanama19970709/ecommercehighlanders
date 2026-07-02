@@ -185,12 +185,10 @@ export function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         })}
       </nav>
 
-      {/* ── Footer link ────────────────────────────────────── */}
       <div className="shrink-0 px-3 pb-4" style={{ borderTop: "1px solid rgba(255,255,255,0.07)" }}>
         <Link
           href="/"
-          target="_blank"
-          rel="noopener noreferrer"
+          onClick={onClose}
           className="mt-3 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-150"
           style={{ color: "rgba(255,255,255,0.4)", border: "1px solid rgba(255,255,255,0.08)" }}
           onMouseEnter={(e) => {
@@ -203,7 +201,7 @@ export function AdminSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: ()
           }}
         >
           <Store className="h-3.5 w-3.5 shrink-0" />
-          <span>Visit Storefront</span>
+          <span>Back to Store</span>
           <ExternalLink className="ml-auto h-3 w-3" style={{ color: "#c8a84b" }} />
         </Link>
       </div>
