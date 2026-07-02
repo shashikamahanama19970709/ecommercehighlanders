@@ -43,7 +43,8 @@ export default function AdminProductsPage() {
 
   const [notice, setNotice] = useState<Notice>(null);
 
-  const [filters, setFilters] = useState<{ sport: string; equipment: string; brand: string; model: string; stock: StockFilter }>({
+  const [filters, setFilters] = useState<{ name: string; sport: string; equipment: string; brand: string; model: string; stock: StockFilter }>({
+    name: '',
     sport: '',
     equipment: '',
     brand: '',
@@ -383,7 +384,9 @@ export default function AdminProductsPage() {
     const brandName = getRefName(p.brand);
     const model = getModel(p);
     const stock = p.stock ?? 0;
+    const productName = p.name || '';
 
+    if (filters.name && !productName.toLowerCase().includes(filters.name.toLowerCase()) && !equipmentName.toLowerCase().includes(filters.name.toLowerCase())) return false;
     if (filters.sport && sportName !== filters.sport) return false;
     if (filters.equipment && equipmentName !== filters.equipment) return false;
     if (filters.brand && brandName !== filters.brand) return false;
@@ -661,7 +664,18 @@ export default function AdminProductsPage() {
         {/* Filters */}
         <div className="mb-8 rounded-2xl bg-white border border-slate-100 p-6 shadow-sm">
           <h3 className="mb-4 text-xs font-bold uppercase tracking-[0.2em] text-[#0f1a2e]">Filter Products</h3>
-          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Product Name</label>
+              <input
+                type="text"
+                value={filters.name}
+                onChange={(e) => setFilters((prev) => ({ ...prev, name: e.target.value }))}
+                placeholder="Search name…"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-semibold outline-none focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10"
+              />
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Sport</label>
               <select

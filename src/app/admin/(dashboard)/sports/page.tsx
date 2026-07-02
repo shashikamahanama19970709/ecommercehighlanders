@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Edit, Trash2, X } from 'lucide-react';
+import { Plus, Edit, Trash2, X, Search } from 'lucide-react';
 import Image from 'next/image';
 import type { Sport } from '@/types/product';
 import { NoticeBanner, type Notice } from '@/components/notice-banner';
@@ -26,8 +26,9 @@ export default function AdminSportsPage() {
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [notice, setNotice] = useState<Notice>(null);
 
-  // Pagination State
+  // Pagination & Filter State
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const itemsPerPage = 10;
 
   const { control, handleSubmit, reset, setValue, clearErrors, watch, getValues, formState: { errors } } = useForm<SportFormData>({
@@ -46,17 +47,29 @@ export default function AdminSportsPage() {
     fetchSports();
   }, []);
 
+  // Filter sports
+  const filteredSports = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return sports;
+    return sports.filter(sport => sport.name.toLowerCase().includes(query));
+  }, [sports, searchQuery]);
+
+  // Reset page to 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   // Adjust pagination if the items count changes (e.g., after deletion)
   useEffect(() => {
-    const totalPages = Math.ceil(sports.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredSports.length / itemsPerPage);
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
     }
-  }, [sports.length, currentPage]);
+  }, [filteredSports.length, currentPage]);
 
-  const totalPages = Math.ceil(sports.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredSports.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedSports = sports.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedSports = filteredSports.slice(startIndex, startIndex + itemsPerPage);
 
   const fetchSports = async () => {
     const response = await fetch('/api/sports');
@@ -233,6 +246,20 @@ export default function AdminSportsPage() {
 
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
+        {/* Search Bar */}
+        <div className="mb-6 max-w-md">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search sports by name..."
+              className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10 transition-all font-semibold"
+            />
+            <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+          </div>
+        </div>
+
         {/* Sports Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {paginatedSports.map((sport) => (
@@ -307,11 +334,11 @@ export default function AdminSportsPage() {
         {totalPages > 1 && (
           <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
             <p className="text-xs font-semibold text-slate-500">
-              Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to{" "}
+              Showing <span className="font-bold text-slate-800">{filteredSports.length === 0 ? 0 : startIndex + 1}</span> to{" "}
               <span className="font-bold text-slate-800">
-                {Math.min(startIndex + itemsPerPage, sports.length)}
+                {Math.min(startIndex + itemsPerPage, filteredSports.length)}
               </span>{" "}
-              of <span className="font-bold text-slate-800">{sports.length}</span> sports
+              of <span className="font-bold text-slate-800">{filteredSports.length}</span> sports
             </p>
             <div className="flex items-center gap-1.5">
               <button

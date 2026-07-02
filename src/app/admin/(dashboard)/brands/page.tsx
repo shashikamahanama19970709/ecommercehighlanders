@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import Image from 'next/image';
 import type { Brand, Sport } from '@/types/product';
 import { NoticeBanner, type Notice } from '@/components/notice-banner';
-import { X } from 'lucide-react';
+import { X, Search } from 'lucide-react';
 
 const brandSchema = z.object({
   name: z.string().min(1, 'Brand name is required'),
@@ -37,7 +37,9 @@ export default function AdminBrandsPage() {
   });
 
   // Pagination State
+  // Pagination & Filter State
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const itemsPerPage = 10;
 
   // Fetch brands and sports
@@ -46,17 +48,29 @@ export default function AdminBrandsPage() {
     fetchSports();
   }, []);
 
+  // Filter brands
+  const filteredBrands = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return brands;
+    return brands.filter(brand => brand.name.toLowerCase().includes(query));
+  }, [brands, searchQuery]);
+
+  // Reset page to 1 when search query changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   // Adjust pagination if the items count changes (e.g., after deletion)
   useEffect(() => {
-    const totalPages = Math.ceil(brands.length / itemsPerPage);
+    const totalPages = Math.ceil(filteredBrands.length / itemsPerPage);
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(totalPages);
     }
-  }, [brands.length, currentPage]);
+  }, [filteredBrands.length, currentPage]);
 
-  const totalPages = Math.ceil(brands.length / itemsPerPage);
+  const totalPages = Math.ceil(filteredBrands.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedBrands = brands.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedBrands = filteredBrands.slice(startIndex, startIndex + itemsPerPage);
 
   const fetchBrands = async () => {
     const response = await fetch('/api/brands');
@@ -217,6 +231,20 @@ export default function AdminBrandsPage() {
 
         <NoticeBanner notice={notice} onClose={() => setNotice(null)} />
 
+        {/* Search Bar */}
+        <div className="mb-6 max-w-md">
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search brands by name..."
+              className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2.5 text-sm outline-none focus:border-[#0f1a2e] focus:ring-2 focus:ring-[#0f1a2e]/10 transition-all font-semibold"
+            />
+            <Search className="absolute left-3.5 top-3.5 h-4 w-4 text-slate-400" />
+          </div>
+        </div>
+
         {/* Brands Table */}
         <div className="rounded-2xl bg-white border border-slate-100 p-6 shadow-sm">
           <div className="overflow-x-auto">
@@ -303,11 +331,11 @@ export default function AdminBrandsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-between border-t border-slate-100 pt-6 mt-4">
               <p className="text-xs text-slate-500 font-semibold">
-                Showing <span className="font-bold text-slate-800">{startIndex + 1}</span> to{" "}
+                Showing <span className="font-bold text-slate-800">{filteredBrands.length === 0 ? 0 : startIndex + 1}</span> to{" "}
                 <span className="font-bold text-slate-800">
-                  {Math.min(startIndex + itemsPerPage, brands.length)}
+                  {Math.min(startIndex + itemsPerPage, filteredBrands.length)}
                 </span>{" "}
-                of <span className="font-bold text-slate-800">{brands.length}</span> brands
+                of <span className="font-bold text-slate-800">{filteredBrands.length}</span> brands
               </p>
               <div className="flex items-center gap-1.5">
                 <button
