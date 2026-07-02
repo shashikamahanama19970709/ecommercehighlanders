@@ -374,89 +374,94 @@ export default function CheckoutPage() {
                 {items.map((item) => (
                   <div
                     key={String(item.product._id)}
-                    className="flex gap-4 rounded-xl border border-[#f0f4f8] bg-[#f8fafc] p-3 transition-shadow hover:shadow-sm"
+                    className="flex flex-col sm:flex-row gap-4 rounded-xl border border-[#f0f4f8] bg-[#f8fafc] p-3 transition-shadow hover:shadow-sm"
                   >
-                    {/* Product image */}
-                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#e8edf5]">
-                      {item.product.featureImageUrl ? (
-                        <Image
-                          src={item.product.featureImageUrl}
-                          alt={item.product.name ?? ''}
-                          fill
-                          className="object-cover"
-                          sizes="64px"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full items-center justify-center">
-                          <ShoppingBag className="h-6 w-6 text-[#c8d4e4]" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Details */}
-                    <div className="flex flex-1 flex-col justify-between min-w-0">
-                      <div>
-                        <h3 className="truncate text-sm font-semibold text-[#0f1a2e]">
-                          {item.product.name}
-                        </h3>
-                        {item.product.sku && (
-                          <p className="text-xs text-[#94a3b8]">SKU: {item.product.sku}</p>
+                    <div className="flex gap-4 flex-1 min-w-0">
+                      {/* Product image */}
+                      <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-[#e8edf5]">
+                        {item.product.featureImageUrl ? (
+                          <Image
+                            src={item.product.featureImageUrl}
+                            alt={item.product.name ?? ''}
+                            fill
+                            className="object-cover"
+                            sizes="64px"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <ShoppingBag className="h-6 w-6 text-[#c8d4e4]" />
+                          </div>
                         )}
                       </div>
-                      {/* Qty controls */}
-                      <div className="mt-2 flex items-center gap-2">
-                        <button
-                          type="button"
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#dde4ee] bg-white text-[#0f1a2e] transition-all hover:bg-[#f0f4f8] disabled:opacity-40"
-                          onClick={() =>
-                            item.quantity > 1 &&
-                            updateQuantity(String(item.product._id), item.quantity - 1)
-                          }
-                          disabled={item.quantity <= 1}
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus className="h-3 w-3" />
-                        </button>
-                        <input
-                          type="number"
-                          min={1}
-                          className="h-7 w-12 rounded-lg border border-[#dde4ee] bg-white text-center text-sm font-medium text-[#0f1a2e] outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f]/20"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateQuantity(String(item.product._id), Number(e.target.value))
-                          }
-                        />
-                        <button
-                          type="button"
-                          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#dde4ee] bg-white text-[#0f1a2e] transition-all hover:bg-[#f0f4f8]"
-                          onClick={() =>
-                            updateQuantity(String(item.product._id), item.quantity + 1)
-                          }
-                          aria-label="Increase quantity"
-                        >
-                          <Plus className="h-3 w-3" />
-                        </button>
-                        <button
-                          type="button"
-                          className="ml-1 flex h-7 w-7 items-center justify-center rounded-lg text-red-400 transition-all hover:bg-red-50 hover:text-red-600"
-                          onClick={() => removeFromCart(String(item.product._id))}
-                          aria-label="Remove item"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
+
+                      {/* Details */}
+                      <div className="flex flex-1 flex-col justify-between min-w-0">
+                        <div>
+                          <h3 className="truncate text-sm font-semibold text-[#0f1a2e]">
+                            {item.product.name}
+                          </h3>
+                          {item.product.sku && (
+                            <p className="text-xs text-[#94a3b8]">SKU: {item.product.sku}</p>
+                          )}
+                        </div>
+                        {/* Qty controls */}
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#dde4ee] bg-white text-[#0f1a2e] transition-all hover:bg-[#f0f4f8] disabled:opacity-40"
+                            onClick={() =>
+                              item.quantity > 1 &&
+                              updateQuantity(String(item.product._id), item.quantity - 1)
+                            }
+                            disabled={item.quantity <= 1}
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <input
+                            type="number"
+                            min={1}
+                            className="h-7 w-12 rounded-lg border border-[#dde4ee] bg-white text-center text-sm font-medium text-[#0f1a2e] outline-none focus:border-[#1e3a5f] focus:ring-1 focus:ring-[#1e3a5f]/20"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              updateQuantity(String(item.product._id), Number(e.target.value))
+                            }
+                          />
+                          <button
+                            type="button"
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#dde4ee] bg-white text-[#0f1a2e] transition-all hover:bg-[#f0f4f8]"
+                            onClick={() =>
+                              updateQuantity(String(item.product._id), item.quantity + 1)
+                            }
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                          <button
+                            type="button"
+                            className="ml-1 flex h-7 w-7 items-center justify-center rounded-lg text-red-400 transition-all hover:bg-red-50 hover:text-red-600"
+                            onClick={() => removeFromCart(String(item.product._id))}
+                            aria-label="Remove item"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
 
                     {/* Price */}
-                    <div className="shrink-0 text-right">
-                      <p className="text-sm font-bold text-[#0f1a2e]">
-                        {formatPrice(item.product.price * item.quantity)}
-                      </p>
-                      {item.quantity > 1 && (
-                        <p className="text-xs text-[#94a3b8]">
-                          {formatPrice(item.product.price)} each
+                    <div className="shrink-0 text-right border-t border-[#f0f4f8] pt-3 sm:border-t-0 sm:pt-0 flex sm:flex-col items-center justify-between sm:justify-start">
+                      <span className="text-xs font-semibold text-[#64748b] sm:hidden">Total Price:</span>
+                      <div>
+                        <p className="text-sm font-bold text-[#0f1a2e]">
+                          {formatPrice(item.product.price * item.quantity)}
                         </p>
-                      )}
+                        {item.quantity > 1 && (
+                          <p className="text-xs text-[#94a3b8] mt-0.5">
+                            {formatPrice(item.product.price)} each
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

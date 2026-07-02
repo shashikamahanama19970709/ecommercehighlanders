@@ -24,6 +24,17 @@ function getId(value: unknown): string {
   return '';
 }
 
+function getName(value: unknown): string {
+  if (!value) return '';
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (/^[a-fA-F0-9]{24}$/.test(trimmed)) return '';
+    return trimmed;
+  }
+  const maybe = value as { name?: string };
+  return maybe.name ?? '';
+}
+
 function getStockLimit(value: unknown): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null;
   return Math.max(0, Math.floor(value));
@@ -168,6 +179,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [hydrated, state.items]);
 
+  interface CartToast {
+    id: string;
+    name: string;
+    brand: string;
+    image?: string;
+  }
+  const [toasts, setToasts] = useState<CartToast[]>([]);
+
   const addToCart = (product: Product) => {
     const productId = getId(product?._id);
     if (!productId) return false;
@@ -179,6 +198,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (existing && stockLimit !== null && existing.quantity >= stockLimit) return false;
 
     dispatch({ type: 'ADD_TO_CART', product });
+
+    // Trigger toast notification
+    const toastId = Math.random().toString(36).substring(2, 9);
+    const newToast: CartToast = {
+      id: toastId,
+      name: getName(product.equipment) || product.name || 'Gear',
+      brand: getName(product.brand) || 'Highlanders',
+      image: product.featureImageUrl || (Array.isArray(product.imageUrls) ? product.imageUrls[0] : undefined),
+    };
+    setToasts(prev => [...prev, newToast]);
+
+    // Auto dismiss after 3 seconds
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== toastId));
+    }, 3000);
+
     return true;
   };
 
@@ -208,6 +243,65 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }}
     >
       {children}
+
+      {/* Global Add to Cart Toast Indicator */}
+      <div className="fixed bottom-5 right-5 z-[100] flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 sm:px-0">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white/95 p-4 shadow-xl backdrop-blur-md pointer-events-auto animate-slide-in-right"
+          >
+            {/* Image */}
+            <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-slate-50 border border-slate-100">
+              {toast.image ? (
+                <img src={toast.image} alt={toast.name} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400">
+                  🛒
+                </div>
+              )}
+            </div>
+            {/* Info */}
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#c8a84b]">
+                {toast.brand || 'Highlanders'}
+              </p>
+              <p className="text-xs font-bold text-[#0f1a2e] truncate mt-0.5">
+                {toast.name}
+              </p>
+              <p className="text-[11px] font-medium text-emerald-600 flex items-center gap-1 mt-0.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping" />
+                Added to cart successfully
+              </p>
+            </div>
+            {/* Close button */}
+            <button
+              onClick={() => setToasts(prev => prev.filter(t => t.id !== toast.id))}
+              className="text-[#94a3b8] hover:text-[#0f1a2e] p-1.5 transition-colors cursor-pointer"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <style>{`
+        @keyframes slideInRight {
+          from {
+            transform: translateX(120%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-in-right {
+          animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+      `}</style>
     </CartContext.Provider>
   );
 }
