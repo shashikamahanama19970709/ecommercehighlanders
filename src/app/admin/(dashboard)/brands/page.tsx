@@ -26,6 +26,17 @@ export default function AdminBrandsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false); const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   const { control, handleSubmit, reset, setValue, clearErrors, watch, formState: { errors } } = useForm<BrandFormData>({
     resolver: zodResolver(brandSchema),
     defaultValues: {
@@ -173,22 +184,31 @@ export default function AdminBrandsPage() {
   };
 
   const handleDelete = async (brandId: string) => {
-    if (!confirm('Are you sure you want to delete this brand?')) return;
+    const brand = brands.find(b => b._id === brandId);
+    const label = brand ? `"${brand.name}"` : 'this brand';
 
-    try {
-      const response = await fetch(`/api/brands/${brandId}`, {
-        method: 'DELETE',
-      });
+    setDeleteConfirm({
+      isOpen: true,
+      title: 'Confirm Delete Brand',
+      message: `Are you sure you want to delete the brand ${label}? This will permanently remove the brand and its associated settings.`,
+      onConfirm: async () => {
+        setDeleteConfirm(prev => ({ ...prev, isOpen: false }));
+        try {
+          const response = await fetch(`/api/brands/${brandId}`, {
+            method: 'DELETE',
+          });
 
-      if (response.ok) {
-        await fetchBrands();
-        setNotice({ type: 'success', message: 'Brands deleted successfully.' });
-      } else {
-        setNotice({ type: 'error', message: 'Brands delete failed.' });
+          if (response.ok) {
+            await fetchBrands();
+            setNotice({ type: 'success', message: 'Brand deleted successfully.' });
+          } else {
+            setNotice({ type: 'error', message: 'Brand delete failed.' });
+          }
+        } catch {
+          setNotice({ type: 'error', message: 'Brand delete failed.' });
+        }
       }
-    } catch {
-      setNotice({ type: 'error', message: 'Brands delete failed.' });
-    }
+    });
   };
 
   const togglePublished = async (brand: Brand) => {
@@ -591,6 +611,32 @@ export default function AdminBrandsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-md overflow-hidden rounded-2xl border bg-background shadow-lg p-6 space-y-4">
+              <h3 className="text-base font-bold text-foreground">{deleteConfirm.title}</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">{deleteConfirm.message}</p>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+                  className="cursor-pointer rounded-full border border-border bg-background px-4 py-2 text-xs hover:bg-accent font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteConfirm.onConfirm}
+                  className="cursor-pointer rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+                >
+                  Confirm Delete
+                </button>
+              </div>
             </div>
           </div>
         )}

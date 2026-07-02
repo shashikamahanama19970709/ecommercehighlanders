@@ -7,4 +7,6 @@ export interface ShippingOption {
   estimatedDays: number;
   regions: string[]; // e.g. ["UK"], ["Europe"], ["International"]
   isDefault?: boolean;
+  isActive?: boolean;
 }
+

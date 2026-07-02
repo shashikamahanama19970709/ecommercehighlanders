@@ -25,6 +25,17 @@ export default function AdminSportsPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string>('');
   const [notice, setNotice] = useState<Notice>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // Pagination & Filter State
   const [currentPage, setCurrentPage] = useState(1);
@@ -181,22 +192,31 @@ export default function AdminSportsPage() {
   };
 
   const handleDelete = async (sportId: string) => {
-    if (!confirm('Are you sure you want to delete this sport?')) return;
+    const sport = sports.find(s => s._id === sportId);
+    const label = sport ? `"${sport.name}"` : 'this sport';
 
-    try {
-      const response = await fetch(`/api/sports/${sportId}`, {
-        method: 'DELETE',
-      });
+    setDeleteConfirm({
+      isOpen: true,
+      title: 'Confirm Delete Sport',
+      message: `Are you sure you want to delete the sport ${label}? This will permanently remove the sport and its equipment types.`,
+      onConfirm: async () => {
+        setDeleteConfirm(prev => ({ ...prev, isOpen: false }));
+        try {
+          const response = await fetch(`/api/sports/${sportId}`, {
+            method: 'DELETE',
+          });
 
-      if (response.ok) {
-        await fetchSports();
-        setNotice({ type: 'success', message: 'Sports deleted successfully.' });
-      } else {
-        setNotice({ type: 'error', message: 'Sports delete failed.' });
+          if (response.ok) {
+            await fetchSports();
+            setNotice({ type: 'success', message: 'Sport deleted successfully.' });
+          } else {
+            setNotice({ type: 'error', message: 'Sport delete failed.' });
+          }
+        } catch {
+          setNotice({ type: 'error', message: 'Sport delete failed.' });
+        }
       }
-    } catch {
-      setNotice({ type: 'error', message: 'Sports delete failed.' });
-    }
+    });
   };
 
   const addEquipmentType = () => {
@@ -606,6 +626,32 @@ export default function AdminSportsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {deleteConfirm.isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-md overflow-hidden rounded-2xl border bg-background shadow-lg p-6 space-y-4">
+              <h3 className="text-base font-bold text-foreground">{deleteConfirm.title}</h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">{deleteConfirm.message}</p>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+                  className="cursor-pointer rounded-full border border-border bg-background px-4 py-2 text-xs hover:bg-accent font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={deleteConfirm.onConfirm}
+                  className="cursor-pointer rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+                >
+                  Confirm Delete
+                </button>
+              </div>
             </div>
           </div>
         )}

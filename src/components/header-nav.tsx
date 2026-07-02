@@ -46,15 +46,64 @@ export function HeaderNav() {
     setMobileOpen(false);
   }, [pathname]);
 
+  const [activeHash, setActiveHash] = useState('');
+  const lastPathname = useRef(pathname);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleHashChange = () => {
+      setActiveHash(window.location.hash);
+    };
+    handleHashChange();
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [pathname]);
+
+  // Smooth scroll automatically when navigating from another page to home page with a hash
+  useEffect(() => {
+    if (pathname === '/' && lastPathname.current !== '/' && typeof window !== 'undefined' && window.location.hash) {
+      const targetId = window.location.hash.substring(1);
+      const timer = setTimeout(() => {
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+        setActiveHash(window.location.hash);
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+    lastPathname.current = pathname;
+  }, [pathname]);
+
   const isActive = (href: string) => {
-    if (href.startsWith('#')) return pathname === '/';
+    if (href.includes('#')) {
+      const hash = href.substring(href.indexOf('#'));
+      return pathname === '/' && activeHash === hash;
+    }
     return pathname === href || pathname.startsWith(href + '/');
   };
 
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('/#')) {
+      const targetId = href.substring(2);
+      if (pathname === '/') {
+        e.preventDefault();
+        const element = document.getElementById(targetId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+        window.history.pushState({}, '', href);
+        setActiveHash(`#${targetId}`);
+      }
+    }
+  };
+
   const navLinks = [
-    { label: 'Shop by Sport', href: '/shop-by-sport' },
+    { label: 'Categories', href: '/#categories' },
+    { label: 'Shop by Sport', href: '/#shop-by-sport' },
+    { label: 'Brands', href: '/#brands' },
     { label: 'Best Selling', href: '/best-selling' },
-    { label: 'About Us', href: '/about' },
+    { label: 'About Us', href: '/#about-us' },
   ];
 
   return (
@@ -65,19 +114,20 @@ export function HeaderNav() {
           <Link
             key={link.href}
             href={link.href}
+            onClick={(e) => handleNavClick(e, link.href)}
             className={`
-              relative inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium
+              relative inline-flex items-center gap-1 px-4 py-2 text-sm font-semibold
               transition-all duration-200 ease-out
               ${isActive(link.href)
-                ? 'bg-[#0f1a2e] text-white shadow-md'
-                : 'text-[#0f1a2e]/80 hover:bg-[#0f1a2e]/06 hover:text-[#0f1a2e]'
+                ? 'text-[#0f1a2e]'
+                : 'text-slate-600 hover:text-[#0f1a2e]'
               }
-              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1e3a5f] focus-visible:ring-offset-2
+              focus-visible:outline-none
             `}
           >
             {link.label}
             {isActive(link.href) && (
-              <span className="absolute bottom-0.5 left-1/2 h-0.5 w-4 -translate-x-1/2 rounded-full bg-[#c8a84b]" />
+              <span className="absolute bottom-0.5 left-4 right-4 h-0.5 rounded-full bg-[#c8a84b]" />
             )}
           </Link>
         ))}
@@ -239,13 +289,16 @@ export function HeaderNav() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  onClick={() => setMobileOpen(false)}
+                  onClick={(e) => {
+                    handleNavClick(e, link.href);
+                    setMobileOpen(false);
+                  }}
                   className={`
-                    flex items-center justify-between rounded-xl px-4 py-3 text-sm font-medium
+                    flex items-center justify-between rounded-xl px-4 py-3 text-sm font-semibold
                     transition-colors duration-150
                     ${isActive(link.href)
-                      ? 'bg-[#0f1a2e] text-white'
-                      : 'text-[#0f1a2e] hover:bg-[#f0f4f8]'
+                      ? 'text-[#0f1a2e] bg-slate-50'
+                      : 'text-slate-600 hover:bg-[#f0f4f8]'
                     }
                   `}
                 >

@@ -52,3 +52,31 @@ export function getShippingOptionsForCountry(country: string): ShippingOption[] 
   }
   return SHIPPING_OPTIONS.filter(opt => opt.regions.includes('International'));
 }
+
+export function getShippingOptionsForList(options: ShippingOption[], country: string): ShippingOption[] {
+  console.log('[getShippingOptionsForList] Filtering options for country:', country);
+  console.log('[getShippingOptionsForList] Total options in database:', options.map(o => ({ id: o.id, regions: o.regions, isActive: o.isActive })));
+  if (!country) return options;
+  const c = country.toLowerCase();
+  
+  let result: ShippingOption[] = [];
+  if (c === 'united kingdom' || c === 'uk') {
+    result = options.filter(opt => opt.regions.map(r => r.toUpperCase()).includes('UK'));
+    console.log('[getShippingOptionsForList] Country mapped to UK. Matching options:', result.map(o => o.id));
+    return result;
+  }
+  
+  const europeanCountries = [
+    'austria','belgium','bulgaria','croatia','cyprus','czech republic','denmark','estonia','finland','france','germany','greece','hungary','ireland','italy','latvia','lithuania','luxembourg','malta','netherlands','poland','portugal','romania','slovakia','slovenia','spain','sweden','switzerland','norway','iceland'
+  ];
+  if (europeanCountries.includes(c)) {
+    result = options.filter(opt => opt.regions.map(r => r.toUpperCase()).includes('EUROPE'));
+    console.log('[getShippingOptionsForList] Country mapped to EUROPE. Matching options:', result.map(o => o.id));
+    return result;
+  }
+  
+  result = options.filter(opt => opt.regions.map(r => r.toUpperCase()).includes('INTERNATIONAL'));
+  console.log('[getShippingOptionsForList] Country mapped to INTERNATIONAL. Matching options:', result.map(o => o.id));
+  return result;
+}
+

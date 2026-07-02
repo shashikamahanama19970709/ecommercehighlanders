@@ -113,25 +113,25 @@ export default async function Home() {
       <LandingVideoHero />
 
       <main className="pb-16 pt-0">
-        <section className="bg-gradient-to-b from-muted/50 via-background to-background py-16">
+        <section id="categories" className="bg-gradient-to-b from-muted/50 via-background to-background py-16 scroll-mt-20">
           <div className="mx-auto w-full max-w-6xl px-6">
             <PopularCategories sports={sports} />
           </div>
         </section>
 
-        <section className="bg-background py-16">
+        <section id="shop-by-sport" className="bg-background py-16 scroll-mt-20">
           <div className="mx-auto w-full max-w-6xl px-6">
             <ShopBySportLandingSection moduleDoc={shopBySportModule} />
           </div>
         </section>
 
-        <section className="bg-gradient-to-b from-muted/50 via-background to-background py-16">
+        <section id="brands" className="bg-gradient-to-b from-muted/50 via-background to-background py-16 scroll-mt-20">
           <div className="mx-auto w-full max-w-6xl px-6">
             <BrandsLandingSection brands={brands} shopBySportModule={shopBySportModule} />
           </div>
         </section>
 
-        <section className="bg-background py-16">
+        <section id="about-us" className="bg-background py-16 scroll-mt-20">
           <div className="mx-auto w-full max-w-6xl px-6">
             <AboutUsLandingSection moduleDoc={aboutUsModule} />
           </div>

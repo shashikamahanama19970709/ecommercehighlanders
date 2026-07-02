@@ -34,14 +34,16 @@ export async function POST(req: NextRequest) {
     };
     await usersCol.insertOne(user as any);
 
-    // Send verification email
+    // Send verification email asynchronously in the background so it doesn't block the API response
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const verifyUrl = `${appUrl}/verify-email?token=${emailVerificationToken}`;
-    await sendMail({
+    sendMail({
       to: email,
       subject: 'Verify your email address - Highlanders Sports',
       html: getVerificationEmailTemplate(name, verifyUrl),
       fromKey: 'support',
+    }).catch((err) => {
+      console.error('Error sending verification email in background:', err);
     });
 
     return NextResponse.json({ success: true });

@@ -164,7 +164,7 @@ export default function RegisterPage() {
             {/* Name */}
             <div className="space-y-1.5 text-left">
               <label htmlFor="name" className="block text-sm font-semibold text-[#0f1a2e]">
-                Full Name
+                Full Name <span className="text-red-500">*</span>
               </label>
               <input
                 id="name"
@@ -180,7 +180,7 @@ export default function RegisterPage() {
             {/* Email */}
             <div className="space-y-1.5 text-left">
               <label htmlFor="email" className="block text-sm font-semibold text-[#0f1a2e]">
-                Email address
+                Email address <span className="text-red-500">*</span>
               </label>
               <input
                 id="email"
@@ -197,7 +197,7 @@ export default function RegisterPage() {
             {/* Password */}
             <div className="space-y-1.5 text-left">
               <label htmlFor="password" className="block text-sm font-semibold text-[#0f1a2e]">
-                Password
+                Password <span className="text-red-500">*</span> <span className="text-[10px] font-normal text-[#94a3b8]">(Min. 6 characters)</span>
               </label>
               <div className="relative">
                 <input
@@ -224,8 +224,8 @@ export default function RegisterPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading}
-              className="w-full rounded-xl px-4 py-3.5 text-sm font-bold text-white transition-all duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:ring-offset-2"
+              disabled={loading || !name.trim() || !email.trim() || password.length < 6}
+              className="w-full rounded-xl px-4 py-3.5 text-sm font-bold text-white transition-all duration-200 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#1e3a5f] focus:ring-offset-2"
               style={{ background: "linear-gradient(135deg, #0f1a2e 0%, #1e3a5f 100%)" }}
             >
               {loading ? (

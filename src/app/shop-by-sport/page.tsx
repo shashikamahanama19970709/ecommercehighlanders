@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState, useCallback } from "react";
 import Slider from "rc-slider";
 import "rc-slider/assets/index.css";
 import Image from "next/image";
@@ -129,6 +129,14 @@ function ShopBySportPageContent() {
   const [activeProduct, setActiveProduct] = useState<Product | null>(null);
   const [activeProductImageUrl, setActiveProductImageUrl] = useState<string>("");
   const [zoomImageUrl, setZoomImageUrl] = useState<string | null>(null);
+  const handleCloseDetails = useCallback(() => {
+    setActiveProduct(null);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('productId');
+      window.history.pushState({}, '', url.toString());
+    }
+  }, []);
   const [specFilters, setSpecFilters] = useState<Record<string, string>>({});
   const [priceMin, setPriceMin] = useState<string>("");
   const [priceMax, setPriceMax] = useState<string>("");
@@ -327,6 +335,16 @@ function ShopBySportPageContent() {
   }, [activeProduct]);
 
   useEffect(() => {
+    const urlProductId = searchParams.get('productId');
+    if (urlProductId && products.length > 0 && !activeProduct) {
+      const match = products.find(p => String(p._id) === urlProductId);
+      if (match) {
+        setActiveProduct(match);
+      }
+    }
+  }, [products, searchParams, activeProduct]);
+
+  useEffect(() => {
     if (!activeProduct && !zoomImageUrl) return;
 
     const onKeyDown = (e: KeyboardEvent) => {
@@ -334,7 +352,7 @@ function ShopBySportPageContent() {
         if (zoomImageUrl) {
           setZoomImageUrl(null);
         } else {
-          setActiveProduct(null);
+          handleCloseDetails();
         }
       }
     };
@@ -347,7 +365,7 @@ function ShopBySportPageContent() {
       document.body.style.overflow = prevOverflow;
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [activeProduct, zoomImageUrl]);
+  }, [activeProduct, zoomImageUrl, handleCloseDetails]);
 
   const selectedSportName = sportsById.get(selectedSportId)?.name ?? 'Sport';
 
@@ -861,7 +879,7 @@ function ShopBySportPageContent() {
           role="dialog"
           aria-modal="true"
           aria-label="Product details"
-          onClick={() => setActiveProduct(null)}
+          onClick={handleCloseDetails}
         >
           <div
             className="max-h-[85vh] w-full max-w-4xl overflow-hidden rounded-2xl border bg-background shadow-lg"
@@ -880,7 +898,7 @@ function ShopBySportPageContent() {
               <button
                 type="button"
                 className="ml-4 rounded-full border border-border px-3 py-1 text-xs hover:bg-accent"
-                onClick={() => setActiveProduct(null)}
+                onClick={handleCloseDetails}
               >
                 Close
               </button>
@@ -1042,21 +1060,24 @@ function ShopBySportPageContent() {
           aria-modal="true"
           aria-label="Image preview zoom"
         >
-          <button
-            type="button"
-            className="absolute top-6 right-6 z-10 rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20 transition-colors"
-            onClick={() => setZoomImageUrl(null)}
-            aria-label="Close zoom preview"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          <div className="relative max-h-[85vh] max-w-[90vw] w-full h-full flex items-center justify-center">
+          <div className="relative max-h-[85vh] max-w-[90vw] w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
             <img
               src={zoomImageUrl}
               alt="Zoomed product view"
               className="max-h-[85vh] max-w-[90vw] object-contain rounded-xl shadow-2xl animate-scale-in"
             />
           </div>
+          <button
+            type="button"
+            className="absolute top-6 right-6 z-[80] rounded-full bg-white/10 p-2.5 text-white hover:bg-white/20 transition-all pointer-events-auto cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              setZoomImageUrl(null);
+            }}
+            aria-label="Close zoom preview"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
       )}
     </div>

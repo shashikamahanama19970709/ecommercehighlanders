@@ -6,8 +6,33 @@ import type { Product, Sport } from '@/types/product';
 import type { ShopBySportModule } from '@/types/shop-by-sport';
 import type { LandingHeroBannerModule } from '@/types/landing-hero-banner';
 import { NoticeBanner, type Notice } from '@/components/notice-banner';
+import type { ShippingOption } from '@/types/shipping-option';
+import type { TaxRate } from '@/lib/tax';
 
-type ModuleName = 'about-us' | 'shop-by-sport' | 'hero-banner' | 'currency';
+type ModuleName = 'about-us' | 'shop-by-sport' | 'hero-banner' | 'currency' | 'shipping' | 'tax';
+
+const COUNTRIES_LIST = [
+  'United States',
+  'Canada',
+  'Australia',
+  'Germany',
+  'France',
+  'Italy',
+  'Spain',
+  'Netherlands',
+  'Ireland',
+  'Sri Lanka',
+  'India',
+  'Japan',
+  'Singapore',
+  'New Zealand',
+  'Switzerland',
+  'Norway',
+  'Sweden',
+  'Denmark',
+  'Austria',
+  'Belgium',
+];
 
 type AboutUsPayload = {
   title: string;
@@ -114,6 +139,213 @@ export default function AdminLandingPage() {
   const [isUploadingHero, setIsUploadingHero] = useState(false);
   const [productQuery, setProductQuery] = useState('');
 
+  // Shipping settings state
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [isShippingLoading, setIsShippingLoading] = useState(false);
+  const [isShippingSaving, setIsShippingSaving] = useState(false);
+  const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+  const [shippingForm, setShippingForm] = useState<Partial<ShippingOption>>({});
+  const [editingShippingIndex, setEditingShippingIndex] = useState<number | null>(null);
+
+  // Tax settings state
+  const [taxRates, setTaxRates] = useState<TaxRate[]>([]);
+  const [isTaxLoading, setIsTaxLoading] = useState(false);
+  const [isTaxSaving, setIsTaxSaving] = useState(false);
+  const [isTaxModalOpen, setIsTaxModalOpen] = useState(false);
+  const [taxForm, setTaxForm] = useState<Partial<TaxRate>>({});
+  const [editingTaxIndex, setEditingTaxIndex] = useState<number | null>(null);
+
+  // Delete Confirmation state
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
+
+  // Shipping Actions
+  const openShippingForm = (opt?: ShippingOption, index?: number) => {
+    if (opt && typeof index === 'number') {
+      setShippingForm({ ...opt, isActive: opt.isActive !== false });
+      setEditingShippingIndex(index);
+    } else {
+      setShippingForm({
+        id: 'ship-' + Math.random().toString(36).substring(2, 9),
+        label: '',
+        description: '',
+        cost: 0,
+        estimatedDays: 1,
+        regions: ['UK'],
+        isDefault: false,
+        isActive: true,
+      });
+      setEditingShippingIndex(null);
+    }
+    setIsShippingModalOpen(true);
+  };
+
+  const saveShippingOptionDraft = () => {
+    if (!shippingForm.label || !shippingForm.id) {
+      alert('Label and ID are required');
+      return;
+    }
+    const cost = Number(shippingForm.cost) || 0;
+    const estDays = Number(shippingForm.estimatedDays) || 1;
+    const finalForm: ShippingOption = {
+      id: shippingForm.id,
+      label: shippingForm.label,
+      description: shippingForm.description || '',
+      estimate: shippingForm.description || '',
+      cost,
+      estimatedDays: estDays,
+      regions: shippingForm.regions || ['UK'],
+      isDefault: Boolean(shippingForm.isDefault),
+      isActive: shippingForm.isActive !== false,
+    };
+
+    setShippingOptions(prev => {
+      const next = [...prev];
+      if (finalForm.isDefault) {
+        next.forEach(o => o.isDefault = false);
+      }
+      if (editingShippingIndex !== null) {
+        next[editingShippingIndex] = finalForm;
+      } else {
+        next.push(finalForm);
+      }
+      return next;
+    });
+    setIsShippingModalOpen(false);
+  };
+
+  const toggleShippingOptionActive = (index: number, active: boolean) => {
+    setShippingOptions(prev => {
+      const next = [...prev];
+      if (next[index]) {
+        next[index] = { ...next[index], isActive: active };
+      }
+      return next;
+    });
+  };
+
+  const deleteShippingOption = (index: number) => {
+    const opt = shippingOptions[index];
+    if (!opt) return;
+    setDeleteConfirm({
+      isOpen: true,
+      title: 'Confirm Deletion',
+      message: `Are you sure you want to delete the shipping option "${opt.label}"? This action cannot be undone.`,
+      onConfirm: () => {
+        setShippingOptions(prev => prev.filter((_, idx) => idx !== index));
+        setDeleteConfirm(prev => ({ ...prev, isOpen: false }));
+        setNotice({ type: 'success', message: `Shipping option "${opt.label}" was deleted. Remember to save to persist changes.` });
+      }
+    });
+  };
+
+  const saveShippingSettings = async () => {
+    setIsShippingSaving(true);
+    try {
+      const res = await fetch('/api/settings/shipping', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ options: shippingOptions }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setNotice({ type: 'success', message: 'Shipping options saved successfully!' });
+    } catch {
+      setNotice({ type: 'error', message: 'Failed to save shipping options.' });
+    } finally {
+      setIsShippingSaving(false);
+    }
+  };
+
+  // Tax Actions
+  const openTaxForm = (opt?: TaxRate, index?: number) => {
+    if (opt && typeof index === 'number') {
+      setTaxForm({ ...opt });
+      setEditingTaxIndex(index);
+    } else {
+      setTaxForm({
+        id: 'tax-' + Math.random().toString(36).substring(2, 9),
+        label: '',
+        rate: 0,
+        country: 'United Kingdom',
+        isActive: true,
+      });
+      setEditingTaxIndex(null);
+    }
+    setIsTaxModalOpen(true);
+  };
+
+  const saveTaxOptionDraft = () => {
+    if (!taxForm.label || !taxForm.id) {
+      alert('Label and ID are required');
+      return;
+    }
+    const rate = Number(taxForm.rate) || 0;
+    const finalForm: TaxRate = {
+      id: taxForm.id,
+      label: taxForm.label,
+      rate,
+      country: taxForm.country || 'United Kingdom',
+      isActive: Boolean(taxForm.isActive),
+    };
+
+    setTaxRates(prev => {
+      const next = [...prev];
+      if (editingTaxIndex !== null) {
+        next[editingTaxIndex] = finalForm;
+      } else {
+        next.push(finalForm);
+      }
+      return next;
+    });
+    setIsTaxModalOpen(false);
+  };
+
+  const deleteTaxOption = (index: number) => {
+    const tr = taxRates[index];
+    if (!tr) return;
+    setDeleteConfirm({
+      isOpen: true,
+      title: 'Confirm Deletion',
+      message: `Are you sure you want to delete the tax rate "${tr.label}"? This action cannot be undone.`,
+      onConfirm: () => {
+        setTaxRates(prev => prev.filter((_, idx) => idx !== index));
+        setDeleteConfirm(prev => ({ ...prev, isOpen: false }));
+        setNotice({ type: 'success', message: `Tax rate "${tr.label}" was deleted. Remember to save to persist changes.` });
+      }
+    });
+  };
+
+  const toggleTaxOptionActive = (index: number, active: boolean) => {
+    setTaxRates(prev => {
+      const next = [...prev];
+      if (next[index]) {
+        next[index] = { ...next[index], isActive: active };
+      }
+      return next;
+    });
+  };
+
+  const saveTaxSettings = async () => {
+    setIsTaxSaving(true);
+    try {
+      const res = await fetch('/api/settings/tax', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rates: taxRates }),
+      });
+      if (!res.ok) throw new Error('Save failed');
+      setNotice({ type: 'success', message: 'Tax rates saved successfully!' });
+    } catch {
+      setNotice({ type: 'error', message: 'Failed to save tax rates.' });
+    } finally {
+      setIsTaxSaving(false);
+    }
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -157,6 +389,24 @@ export default function AdminLandingPage() {
         image2Key: data.image2Key,
         image2Url: data.image2Url,
       });
+    })();
+
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/shipping', { cache: 'no-store' });
+        if (!res.ok) return;
+        const out = await res.json();
+        if (Array.isArray(out?.options)) setShippingOptions(out.options);
+      } catch {}
+    })();
+
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/tax', { cache: 'no-store' });
+        if (!res.ok) return;
+        const out = await res.json();
+        if (Array.isArray(out?.rates)) setTaxRates(out.rates);
+      } catch {}
     })();
   }, []);
 
@@ -533,8 +783,21 @@ export default function AdminLandingPage() {
   };
 
   const removeEntry = (index: number) => {
-    setEntries((prev) => prev.filter((_, i) => i !== index));
+    const entry = entries[index];
+    if (!entry) return;
+    const name = sportName(entry.sportId);
+    setDeleteConfirm({
+      isOpen: true,
+      title: 'Confirm Deletion',
+      message: `Are you sure you want to delete the sport card for "${name}"? This action cannot be undone.`,
+      onConfirm: () => {
+        setEntries((prev) => prev.filter((_, i) => i !== index));
+        setDeleteConfirm((prev) => ({ ...prev, isOpen: false }));
+        setNotice({ type: 'success', message: `Sport card "${name}" was deleted. Remember to save to persist changes.` });
+      },
+    });
   };
+
 
   const uploadHeroImageForDraft = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -798,6 +1061,248 @@ export default function AdminLandingPage() {
                 {isSavingCurrency ? 'Saving...' : 'Save Currency Settings'}
               </button>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Shipping Method Settings Accordion */}
+      <div className="rounded-2xl border bg-background mb-4">
+        <button
+          type="button"
+          onClick={() => toggleModule('shipping')}
+          aria-expanded={openModule === 'shipping'}
+          className="flex w-full items-center gap-3 px-5 py-4 text-left"
+        >
+          <span className="text-base font-semibold text-foreground">{openModule === 'shipping' ? '−' : '+'}</span>
+          <span className="text-base font-semibold text-foreground">Shipping Method Settings</span>
+        </button>
+
+        {openModule === 'shipping' && (
+          <div className="space-y-6 border-t p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Manage Shipping Options</h2>
+                <p className="text-sm text-muted-foreground">Configure the shipping services, costs, and matching regions.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsShippingLoading(true);
+                    try {
+                      const res = await fetch('/api/settings/shipping', { cache: 'no-store' });
+                      const data = await res.json();
+                      if (Array.isArray(data?.options)) setShippingOptions(data.options);
+                    } catch {}
+                    setIsShippingLoading(false);
+                  }}
+                  className="cursor-pointer rounded-full border border-border bg-background px-3 py-2 text-xs hover:bg-accent"
+                >
+                  Refresh
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openShippingForm()}
+                  className="cursor-pointer rounded-full border border-border bg-background px-3 py-2 text-xs hover:bg-accent"
+                >
+                  Add Option
+                </button>
+                <button
+                  type="button"
+                  disabled={isShippingSaving}
+                  onClick={saveShippingSettings}
+                  className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90 disabled:opacity-60"
+                >
+                  {isShippingSaving ? 'Saving…' : 'Save Shipping Options'}
+                </button>
+              </div>
+            </div>
+
+            {isShippingLoading ? (
+              <div className="rounded-lg border border-dashed bg-muted p-6 text-center text-xs text-muted-foreground">Loading…</div>
+            ) : shippingOptions.length === 0 ? (
+              <div className="rounded-2xl border border-dashed bg-muted p-8 text-center text-sm text-muted-foreground">
+                No shipping options configured yet. Click “Add Option” to create one.
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {shippingOptions.map((opt, idx) => (
+                  <div key={opt.id || idx} className="rounded-2xl border bg-background p-4 shadow-sm relative flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <h3 className="font-semibold text-sm truncate text-foreground">{opt.label}</h3>
+                        <div className="flex items-center gap-2">
+                          {opt.isDefault && (
+                            <span className="rounded bg-foreground/10 px-1.5 py-0.5 text-[10px] font-medium text-foreground">Default</span>
+                          )}
+                          <label className="relative h-6 w-11 flex-none rounded-full border transition cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={opt.isActive !== false}
+                              className="sr-only"
+                              onChange={(e) => toggleShippingOptionActive(idx, e.target.checked)}
+                            />
+                            <div className={`w-11 h-6 rounded-full border transition ${opt.isActive !== false ? 'bg-foreground border-foreground' : 'bg-muted border-border'}`}>
+                              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-background transition ${opt.isActive !== false ? 'left-[22px]' : 'left-[2px]'}`} />
+                            </div>
+                          </label>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-1">{opt.description || opt.estimate}</p>
+                      
+                      <div className="mt-3 flex gap-4 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Cost: </span>
+                          <span className="font-medium">${opt.cost.toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Est. Time: </span>
+                          <span className="font-medium">{opt.estimatedDays} days</span>
+                        </div>
+                      </div>
+
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {opt.regions.map(r => (
+                          <span key={r} className="rounded border border-border px-1.5 py-0.5 text-[9px] font-semibold text-foreground/80">{r}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t flex justify-end gap-3 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => openShippingForm(opt, idx)}
+                        className="cursor-pointer text-muted-foreground hover:text-foreground font-semibold"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteShippingOption(idx)}
+                        className="cursor-pointer text-red-500 hover:text-red-700 font-semibold"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Tax Settings Accordion */}
+      <div className="rounded-2xl border bg-background mb-4">
+        <button
+          type="button"
+          onClick={() => toggleModule('tax')}
+          aria-expanded={openModule === 'tax'}
+          className="flex w-full items-center gap-3 px-5 py-4 text-left"
+        >
+          <span className="text-base font-semibold text-foreground">{openModule === 'tax' ? '−' : '+'}</span>
+          <span className="text-base font-semibold text-foreground">Tax Settings</span>
+        </button>
+
+        {openModule === 'tax' && (
+          <div className="space-y-6 border-t p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-semibold text-foreground">Configure VAT and Tax Rates</h2>
+                <p className="text-sm text-muted-foreground">Define tax rules, rates, and toggle their applicability.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setIsTaxLoading(true);
+                    try {
+                      const res = await fetch('/api/settings/tax', { cache: 'no-store' });
+                      const data = await res.json();
+                      if (Array.isArray(data?.rates)) setTaxRates(data.rates);
+                    } catch {}
+                    setIsTaxLoading(false);
+                  }}
+                  className="cursor-pointer rounded-full border border-border bg-background px-3 py-2 text-xs hover:bg-accent"
+                >
+                  Refresh
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openTaxForm()}
+                  className="cursor-pointer rounded-full border border-border bg-background px-3 py-2 text-xs hover:bg-accent"
+                >
+                  Add Tax Rate
+                </button>
+                <button
+                  type="button"
+                  disabled={isTaxSaving}
+                  onClick={saveTaxSettings}
+                  className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90 disabled:opacity-60"
+                >
+                  {isTaxSaving ? 'Saving…' : 'Save Tax Settings'}
+                </button>
+              </div>
+            </div>
+
+            {isTaxLoading ? (
+              <div className="rounded-lg border border-dashed bg-muted p-6 text-center text-xs text-muted-foreground">Loading…</div>
+            ) : taxRates.length === 0 ? (
+              <div className="rounded-2xl border border-dashed bg-muted p-8 text-center text-sm text-muted-foreground">
+                No tax rates configured yet. Click “Add Tax Rate” to create one.
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {taxRates.map((tr, idx) => (
+                  <div key={tr.id || idx} className="rounded-2xl border bg-background p-4 shadow-sm relative flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between">
+                        <h3 className="font-semibold text-sm truncate text-foreground">{tr.label}</h3>
+                        <label className="relative h-6 w-11 flex-none rounded-full border transition cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={tr.isActive}
+                            className="sr-only"
+                            onChange={(e) => toggleTaxOptionActive(idx, e.target.checked)}
+                          />
+                          <div className={`w-11 h-6 rounded-full border transition ${tr.isActive ? 'bg-foreground border-foreground' : 'bg-muted border-border'}`}>
+                            <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-background transition ${tr.isActive ? 'left-[22px]' : 'left-[2px]'}`} />
+                          </div>
+                        </label>
+                      </div>
+                      
+                      <div className="mt-3 flex gap-4 text-xs">
+                        <div>
+                          <span className="text-muted-foreground">Rate: </span>
+                          <span className="font-bold text-foreground">{tr.rate}%</span>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground">Country/Region: </span>
+                          <span className="font-semibold text-foreground capitalize">{tr.country}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 pt-3 border-t flex justify-end gap-3 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => openTaxForm(tr, idx)}
+                        className="cursor-pointer text-muted-foreground hover:text-foreground font-semibold"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => deleteTaxOption(idx)}
+                        className="cursor-pointer text-red-500 hover:text-red-700 font-semibold"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1327,9 +1832,521 @@ export default function AdminLandingPage() {
               </div>
             </div>
           )}
+
+          {/* Shipping Option Modal */}
+          {isShippingModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-xl overflow-hidden rounded-2xl border bg-background shadow-lg">
+                <div className="flex items-center justify-between border-b px-5 py-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {editingShippingIndex === null ? 'Create shipping option' : 'Edit shipping option'}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsShippingModalOpen(false)}
+                    className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-accent"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="max-h-[80vh] overflow-auto p-5 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground block">Option ID (slug)</label>
+                    <input
+                      value={shippingForm.id || ''}
+                      onChange={(e) => setShippingForm(prev => ({ ...prev, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+                      placeholder="e.g. uk-standard"
+                      disabled={editingShippingIndex !== null}
+                      className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground block">Label</label>
+                    <input
+                      value={shippingForm.label || ''}
+                      onChange={(e) => setShippingForm(prev => ({ ...prev, label: e.target.value }))}
+                      placeholder="e.g. UK Standard Delivery"
+                      className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                    />
+                  </div>
+
+                  <div className="grid gap-4 grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground block">Cost ($)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={shippingForm.cost ?? 0}
+                        onChange={(e) => setShippingForm(prev => ({ ...prev, cost: parseFloat(e.target.value) || 0 }))}
+                        className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-muted-foreground block">Estimated Days</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={shippingForm.estimatedDays ?? 1}
+                        onChange={(e) => setShippingForm(prev => ({ ...prev, estimatedDays: parseInt(e.target.value) || 1 }))}
+                        className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground block">Estimate Text</label>
+                    <input
+                      value={shippingForm.description || ''}
+                      onChange={(e) => setShippingForm(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="e.g. 2-4 business days"
+                      className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground block">Regions</label>
+                    <div className="flex gap-4">
+                      {['UK', 'Europe', 'International'].map((r) => {
+                        const checked = shippingForm.regions?.includes(r) ?? false;
+                        return (
+                          <label key={r} className="flex cursor-pointer items-center gap-1.5 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                const nextRegions = e.target.checked
+                                  ? [...(shippingForm.regions || []), r]
+                                  : (shippingForm.regions || []).filter(x => x !== r);
+                                setShippingForm(prev => ({ ...prev, regions: nextRegions }));
+                              }}
+                            />
+                            <span>{r}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 flex items-center gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="shipping-default-opt"
+                      checked={shippingForm.isDefault ?? false}
+                      onChange={(e) => setShippingForm(prev => ({ ...prev, isDefault: e.target.checked }))}
+                    />
+                    <label htmlFor="shipping-default-opt" className="text-xs font-semibold text-muted-foreground cursor-pointer select-none">
+                      Is default shipping option?
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 border-t pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsShippingModalOpen(false)}
+                      className="cursor-pointer rounded-full border border-border bg-background px-4 py-2 text-xs hover:bg-accent"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveShippingOptionDraft}
+                      className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90"
+                    >
+                      Save Option
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tax Rate Modal */}
+          {isTaxModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+              <div className="w-full max-w-xl overflow-hidden rounded-2xl border bg-background shadow-lg">
+                <div className="flex items-center justify-between border-b px-5 py-4">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      {editingTaxIndex === null ? 'Create tax rate' : 'Edit tax rate'}
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsTaxModalOpen(false)}
+                    className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-accent"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="max-h-[80vh] overflow-auto p-5 space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground block">Tax ID (slug)</label>
+                    <input
+                      value={taxForm.id || ''}
+                      onChange={(e) => setTaxForm(prev => ({ ...prev, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+                      placeholder="e.g. uk-vat"
+                      disabled={editingTaxIndex !== null}
+                      className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground block">Label</label>
+                    <input
+                      value={taxForm.label || ''}
+                      onChange={(e) => setTaxForm(prev => ({ ...prev, label: e.target.value }))}
+                      placeholder="e.g. UK VAT"
+                      className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground block">Rate (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={taxForm.rate ?? 0}
+                      onChange={(e) => setTaxForm(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
+                      className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground block">Country / Region</label>
+                    <select
+                      value={taxForm.country || ''}
+                      onChange={(e) => setTaxForm(prev => ({ ...prev, country: e.target.value }))}
+                      className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                    >
+                      <option value="" disabled>Select country or region</option>
+                      <option value="United Kingdom">United Kingdom</option>
+                      <option value="Europe">Europe (Region)</option>
+                      <option value="International">International (Fallback)</option>
+                      {COUNTRIES_LIST.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5 flex items-center gap-2 pt-2">
+                    <input
+                      type="checkbox"
+                      id="tax-active-opt"
+                      checked={taxForm.isActive ?? true}
+                      onChange={(e) => setTaxForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                    />
+                    <label htmlFor="tax-active-opt" className="text-xs font-semibold text-muted-foreground cursor-pointer select-none">
+                      Is tax rate active?
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 border-t pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsTaxModalOpen(false)}
+                      className="cursor-pointer rounded-full border border-border bg-background px-4 py-2 text-xs hover:bg-accent"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveTaxOptionDraft}
+                      className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90"
+                    >
+                      Save Tax Rate
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           </div>
         )}
       </div>
+
+      {/* Shipping Option Modal */}
+      {isShippingModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl border bg-background shadow-lg">
+            <div className="flex items-center justify-between border-b px-5 py-4">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {editingShippingIndex === null ? 'Create shipping option' : 'Edit shipping option'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsShippingModalOpen(false)}
+                className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-accent"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="max-h-[80vh] overflow-auto p-5 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground block">Option ID (slug)</label>
+                <input
+                  value={shippingForm.id || ''}
+                  onChange={(e) => setShippingForm(prev => ({ ...prev, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+                  placeholder="e.g. uk-standard"
+                  disabled={editingShippingIndex !== null}
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground block">Label</label>
+                <input
+                  value={shippingForm.label || ''}
+                  onChange={(e) => setShippingForm(prev => ({ ...prev, label: e.target.value }))}
+                  placeholder="e.g. UK Standard Delivery"
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                />
+              </div>
+
+              <div className="grid gap-4 grid-cols-2">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground block">Cost ($)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={shippingForm.cost ?? 0}
+                    onChange={(e) => setShippingForm(prev => ({ ...prev, cost: parseFloat(e.target.value) || 0 }))}
+                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground block">Estimated Days</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={shippingForm.estimatedDays ?? 1}
+                    onChange={(e) => setShippingForm(prev => ({ ...prev, estimatedDays: parseInt(e.target.value) || 1 }))}
+                    className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground block">Estimate Text</label>
+                <input
+                  value={shippingForm.description || ''}
+                  onChange={(e) => setShippingForm(prev => ({ ...prev, description: e.target.value }))}
+                  placeholder="e.g. 2-4 business days"
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground block">Regions</label>
+                <div className="flex gap-4">
+                  {['UK', 'Europe', 'International'].map((r) => {
+                    const checked = shippingForm.regions?.includes(r) ?? false;
+                    return (
+                      <label key={r} className="flex cursor-pointer items-center gap-1.5 text-xs">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            const nextRegions = e.target.checked
+                              ? [...(shippingForm.regions || []), r]
+                              : (shippingForm.regions || []).filter(x => x !== r);
+                            setShippingForm(prev => ({ ...prev, regions: nextRegions }));
+                          }}
+                        />
+                        <span>{r}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-1.5 flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="shipping-default-opt"
+                  checked={shippingForm.isDefault ?? false}
+                  onChange={(e) => setShippingForm(prev => ({ ...prev, isDefault: e.target.checked }))}
+                />
+                <label htmlFor="shipping-default-opt" className="text-xs font-semibold text-muted-foreground cursor-pointer select-none">
+                  Is default shipping option?
+                </label>
+              </div>
+
+              <div className="space-y-1.5 flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="shipping-active-opt"
+                  checked={shippingForm.isActive ?? true}
+                  onChange={(e) => setShippingForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                />
+                <label htmlFor="shipping-active-opt" className="text-xs font-semibold text-muted-foreground cursor-pointer select-none">
+                  Is shipping option active?
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsShippingModalOpen(false)}
+                  className="cursor-pointer rounded-full border border-border bg-background px-4 py-2 text-xs hover:bg-accent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveShippingOptionDraft}
+                  className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90"
+                >
+                  Save Option
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tax Rate Modal */}
+      {isTaxModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-xl overflow-hidden rounded-2xl border bg-background shadow-lg">
+            <div className="flex items-center justify-between border-b px-5 py-4">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  {editingTaxIndex === null ? 'Create tax rate' : 'Edit tax rate'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTaxModalOpen(false)}
+                className="cursor-pointer rounded-full border border-border px-3 py-1 text-xs hover:bg-accent"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="max-h-[80vh] overflow-auto p-5 space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground block">Tax ID (slug)</label>
+                <input
+                  value={taxForm.id || ''}
+                  onChange={(e) => setTaxForm(prev => ({ ...prev, id: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))}
+                  placeholder="e.g. uk-vat"
+                  disabled={editingTaxIndex !== null}
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground block">Label</label>
+                <input
+                  value={taxForm.label || ''}
+                  onChange={(e) => setTaxForm(prev => ({ ...prev, label: e.target.value }))}
+                  placeholder="e.g. UK VAT"
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground block">Rate (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={taxForm.rate ?? 0}
+                  onChange={(e) => setTaxForm(prev => ({ ...prev, rate: parseFloat(e.target.value) || 0 }))}
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-muted-foreground block">Country / Region</label>
+                <select
+                  value={taxForm.country || ''}
+                  onChange={(e) => setTaxForm(prev => ({ ...prev, country: e.target.value }))}
+                  className="h-9 w-full rounded-md border border-border bg-background px-3 text-xs"
+                >
+                  <option value="" disabled>Select country or region</option>
+                  <option value="United Kingdom">United Kingdom</option>
+                  <option value="Europe">Europe (Region)</option>
+                  <option value="International">International (Fallback)</option>
+                  {COUNTRIES_LIST.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1.5 flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="tax-active-opt"
+                  checked={taxForm.isActive ?? true}
+                  onChange={(e) => setTaxForm(prev => ({ ...prev, isActive: e.target.checked }))}
+                />
+                <label htmlFor="tax-active-opt" className="text-xs font-semibold text-muted-foreground cursor-pointer select-none">
+                  Is tax rate active?
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsTaxModalOpen(false)}
+                  className="cursor-pointer rounded-full border border-border bg-background px-4 py-2 text-xs hover:bg-accent"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={saveTaxOptionDraft}
+                  className="cursor-pointer rounded-full bg-foreground px-4 py-2 text-xs font-medium text-background hover:bg-foreground/90"
+                >
+                  Save Tax Rate
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-md overflow-hidden rounded-2xl border bg-background shadow-lg p-6 space-y-4">
+            <h3 className="text-base font-bold text-foreground">{deleteConfirm.title}</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed">{deleteConfirm.message}</p>
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirm(prev => ({ ...prev, isOpen: false }))}
+                className="cursor-pointer rounded-full border border-border bg-background px-4 py-2 text-xs hover:bg-accent font-semibold"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={deleteConfirm.onConfirm}
+                className="cursor-pointer rounded-full bg-red-600 px-4 py-2 text-xs font-semibold text-white hover:bg-red-700"
+              >
+                Confirm Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

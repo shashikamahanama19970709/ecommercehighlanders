@@ -6,27 +6,26 @@ import { useEffect, useState } from 'react';
 import { useUser } from '@/lib/use-user';
 import Image from 'next/image';
 import Link from 'next/link';
-import { getShippingOptionsForCountry } from '@/lib/shipping-options';
+import { getShippingOptionsForList } from '@/lib/shipping-options';
 import type { ShippingOption } from '@/types/shipping-option';
-import { calculateTax } from '@/lib/tax';
+import { calculateDynamicTax, type TaxRate } from '@/lib/tax';
 import { NoticeBanner, type Notice } from '@/components/notice-banner';
 import { AddressBook } from '@/components/address-book';
+import type { Address } from '@/types/address';
 import {
   ShoppingBag,
   Truck,
-  Tag,
   CreditCard,
   Shield,
   Trash2,
   Plus,
   Minus,
   ArrowLeft,
-  CheckCircle,
   Lock,
 } from 'lucide-react';
 import { LogoLoader } from '@/components/logo-loader';
 
-type Coupon = { code: string; description: string };
+
 
 const SectionCard = ({
   icon,
@@ -51,6 +50,30 @@ const SectionCard = ({
 const inputCls =
   'w-full rounded-xl border border-[#dde4ee] bg-[#f8fafc] px-4 py-3 text-sm text-[#0f1a2e] placeholder:text-[#94a3b8] outline-none transition-all duration-150 focus:border-[#1e3a5f] focus:bg-white focus:ring-2 focus:ring-[#1e3a5f]/10';
 
+const COUNTRIES = [
+  'United Kingdom',
+  'United States',
+  'Canada',
+  'Australia',
+  'Germany',
+  'France',
+  'Italy',
+  'Spain',
+  'Netherlands',
+  'Ireland',
+  'Sri Lanka',
+  'India',
+  'Japan',
+  'Singapore',
+  'New Zealand',
+  'Switzerland',
+  'Norway',
+  'Sweden',
+  'Denmark',
+  'Austria',
+  'Belgium',
+];
+
 export default function CheckoutPage() {
   const { items, total, updateQuantity, removeFromCart } = useCart();
   const { formatPrice, selectedCurrency } = useCurrency();
@@ -62,30 +85,93 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false);
 
   const [selectedCountry, setSelectedCountry] = useState('United Kingdom');
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
   const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
 
   const [tax, setTax] = useState(0);
-  const [taxRate, setTaxRate] = useState(0);
+  const [taxRate, setTaxRate] = useState<number | null>(null);
 
-  const [discount, setDiscount] = useState(0);
-  const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
-  const [couponCode, setCouponCode] = useState('');
+  const [dbShippingOptions, setDbShippingOptions] = useState<ShippingOption[]>([]);
+  const [dbTaxRates, setDbTaxRates] = useState<TaxRate[]>([]);
+
+  const [guestAddress, setGuestAddress] = useState({
+    name: '',
+    line1: '',
+    line2: '',
+    city: '',
+    region: '',
+    postalCode: '',
+    country: 'United Kingdom',
+    phone: '',
+  });
+
+  const handleGuestAddressChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setGuestAddress(prev => {
+      const next = { ...prev, [name]: value };
+      if (name === 'country') {
+        setSelectedCountry(value);
+        console.log('[Guest Checkout] Country changed directly to:', value);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
-    const opts = getShippingOptionsForCountry(selectedCountry);
-    setShippingOptions(opts);
-    setSelectedShipping(opts[0] || null);
-  }, [selectedCountry]);
+    console.log('[Checkout useEffect] selectedCountry:', selectedCountry);
+    console.log('[Checkout useEffect] dbShippingOptions count:', dbShippingOptions.length);
+    if (dbShippingOptions.length === 0) {
+      console.log('[Checkout useEffect] dbShippingOptions is empty, clearing shippingOptions');
+      setShippingOptions([]);
+      setSelectedShipping(null);
+      return;
+    }
+    const opts = getShippingOptionsForList(dbShippingOptions, selectedCountry);
+    console.log('[Checkout useEffect] getShippingOptionsForList returned count:', opts.length);
+    const activeOpts = opts.filter(o => o.isActive !== false);
+    console.log('[Checkout useEffect] activeOpts count:', activeOpts.length, activeOpts.map(o => ({ id: o.id, label: o.label, cost: o.cost })));
+    setShippingOptions(activeOpts);
+    const defOption = activeOpts.find(o => o.isDefault) || activeOpts[0] || null;
+    console.log('[Checkout useEffect] Selected default shipping option:', defOption?.id);
+    setSelectedShipping(defOption);
+  }, [selectedCountry, dbShippingOptions]);
 
   useEffect(() => {
-    if (!selectedShipping) return;
-    const { tax: calculatedTax, rate } = calculateTax(items, selectedCountry, selectedShipping);
+    console.log('[Checkout useEffect] selectedShipping:', selectedShipping?.id, 'dbTaxRates count:', dbTaxRates.length);
+    if (!selectedShipping || dbTaxRates.length === 0) {
+      console.log('[Checkout useEffect] No shipping option selected or no tax rates loaded. Resetting tax.');
+      setTax(0);
+      setTaxRate(null);
+      return;
+    }
+    const { tax: calculatedTax, rate } = calculateDynamicTax(items, selectedCountry, dbTaxRates);
+    console.log('[Checkout useEffect] calculateDynamicTax result - tax amount:', calculatedTax, 'rate:', rate);
     setTax(calculatedTax);
     setTaxRate(rate);
-  }, [items, selectedCountry, selectedShipping]);
+  }, [items, selectedCountry, selectedShipping, dbTaxRates]);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+
+    fetch('/api/settings/shipping', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data?.options)) {
+          setDbShippingOptions(data.options);
+        }
+      })
+      .catch(err => console.error('Failed to load shipping settings', err));
+
+    fetch('/api/settings/tax', { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data?.rates)) {
+          setDbTaxRates(data.rates);
+        }
+      })
+      .catch(err => console.error('Failed to load tax settings', err));
+  }, []);
 
   if (!mounted || userLoading) {
     return (
@@ -95,18 +181,7 @@ export default function CheckoutPage() {
     );
   }
 
-  const handleApplyCoupon = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (couponCode.trim().toUpperCase() === 'SAVE10') {
-      setDiscount(total * 0.1);
-      setAppliedCoupon({ code: 'SAVE10', description: '10% off' });
-      setNotice({ type: 'success', message: '🎉 Coupon SAVE10 applied — 10% off!' });
-    } else {
-      setDiscount(0);
-      setAppliedCoupon(null);
-      setNotice({ type: 'error', message: 'Invalid coupon code. Try SAVE10.' });
-    }
-  };
+
 
   const handlePlaceOrder = async () => {
     setNotice(null);
@@ -115,6 +190,36 @@ export default function CheckoutPage() {
       setNotice({ type: 'error', message: 'Please enter your email address to continue.' });
       return;
     }
+
+    if (authenticated && !selectedAddress) {
+      setNotice({ type: 'error', message: 'Please select a shipping address to continue.' });
+      return;
+    }
+
+    if (!authenticated) {
+      if (!guestAddress.name.trim()) {
+        setNotice({ type: 'error', message: 'Please enter your full name for shipping.' });
+        return;
+      }
+      if (!guestAddress.line1.trim()) {
+        setNotice({ type: 'error', message: 'Please enter your street address.' });
+        return;
+      }
+      if (!guestAddress.city.trim()) {
+        setNotice({ type: 'error', message: 'Please enter your city.' });
+        return;
+      }
+      if (!guestAddress.postalCode.trim()) {
+        setNotice({ type: 'error', message: 'Please enter your postal/ZIP code.' });
+        return;
+      }
+    }
+
+    if (!selectedShipping) {
+      setNotice({ type: 'error', message: 'Please select a shipping method to continue.' });
+      return;
+    }
+
     setIsPlacingOrder(true);
     try {
       const payload = {
@@ -127,11 +232,8 @@ export default function CheckoutPage() {
         shipping: selectedShipping
           ? { label: selectedShipping.label, cost: selectedShipping.cost }
           : undefined,
-        tax: tax
+        tax: tax && taxRate !== null
           ? { label: `Tax (${(taxRate * 100).toFixed(0)}%)`, amount: tax }
-          : undefined,
-        discount: discount
-          ? { label: appliedCoupon?.description || 'Discount', amount: discount }
           : undefined,
       };
       const res = await fetch('/api/checkout', {
@@ -184,7 +286,7 @@ export default function CheckoutPage() {
 
   const subtotal = total;
   const shippingCost = selectedShipping?.cost ?? 0;
-  const finalTotal = subtotal + shippingCost - discount + tax;
+  const finalTotal = subtotal + shippingCost + tax;
 
   return (
     <div className="flex-1 bg-[#f8fafc]">
@@ -360,71 +462,157 @@ export default function CheckoutPage() {
                 ))}
               </div>
 
-              {/* Promo Code */}
-              <div className="mt-5">
-                {appliedCoupon ? (
-                  <div className="flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-emerald-600" />
-                      <span className="text-sm font-semibold text-emerald-700">
-                        {appliedCoupon.code}
-                      </span>
-                      <span className="text-sm text-emerald-600">— {appliedCoupon.description}</span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDiscount(0);
-                        setAppliedCoupon(null);
-                        setCouponCode('');
-                      }}
-                      className="text-xs text-emerald-600 hover:text-emerald-800 underline"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleApplyCoupon} className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Tag className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
-                      <input
-                        type="text"
-                        placeholder="Promo code (try SAVE10)"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        className="w-full rounded-xl border border-[#dde4ee] bg-[#f8fafc] py-3 pl-10 pr-4 text-sm text-[#0f1a2e] placeholder:text-[#94a3b8] outline-none transition-all focus:border-[#1e3a5f] focus:bg-white focus:ring-2 focus:ring-[#1e3a5f]/10"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      disabled={isPlacingOrder}
-                      className="shrink-0 rounded-xl border border-[#1e3a5f] px-5 text-sm font-semibold text-[#1e3a5f] transition-all hover:bg-[#1e3a5f] hover:text-white disabled:opacity-50"
-                    >
-                      Apply
-                    </button>
-                  </form>
-                )}
-              </div>
+
             </SectionCard>
 
             {/* Shipping Address */}
             <SectionCard icon={<Truck />} title="Shipping Address">
               {authenticated ? (
-                <AddressBook />
+                <AddressBook
+                  selectedId={selectedAddress?._id}
+                  onSelect={(addr) => {
+                    setSelectedAddress(addr);
+                    if (addr.country) {
+                      setSelectedCountry(addr.country);
+                    }
+                  }}
+                />
               ) : (
                 <div className="space-y-4">
-                  <p className="text-sm text-[#64748b]">
-                    Enter your email to receive order updates and tracking information.
-                  </p>
-                  <input
-                    type="email"
-                    placeholder="Email address"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={inputCls}
-                    required
-                  />
-                  <p className="text-xs text-[#94a3b8]">
+                  <div className="border-b border-[#f0f4f8] pb-3 mb-3">
+                    <h3 className="text-xs font-bold text-[#64748b] uppercase tracking-wider">Contact & Shipping Details</h3>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#475569] mb-1.5">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="email@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className={inputCls}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#475569] mb-1.5">
+                        Full Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        name="name"
+                        placeholder="Full name"
+                        value={guestAddress.name}
+                        onChange={handleGuestAddressChange}
+                        className={inputCls}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#475569] mb-1.5">
+                        Phone Number <span className="text-[#94a3b8] font-normal">(Optional)</span>
+                      </label>
+                      <input
+                        name="phone"
+                        placeholder="Phone number"
+                        value={guestAddress.phone}
+                        onChange={handleGuestAddressChange}
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#475569] mb-1.5">
+                      Address Line 1 <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      name="line1"
+                      placeholder="Street address or P.O. Box"
+                      value={guestAddress.line1}
+                      onChange={handleGuestAddressChange}
+                      className={inputCls}
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-[#475569] mb-1.5">
+                      Address Line 2 <span className="text-[#94a3b8] font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      name="line2"
+                      placeholder="Apartment, suite, unit, building, floor, etc."
+                      value={guestAddress.line2}
+                      onChange={handleGuestAddressChange}
+                      className={inputCls}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#475569] mb-1.5">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        name="city"
+                        placeholder="City"
+                        value={guestAddress.city}
+                        onChange={handleGuestAddressChange}
+                        className={inputCls}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#475569] mb-1.5">
+                        Region / State <span className="text-[#94a3b8] font-normal">(Optional)</span>
+                      </label>
+                      <input
+                        name="region"
+                        placeholder="Region or State"
+                        value={guestAddress.region}
+                        onChange={handleGuestAddressChange}
+                        className={inputCls}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-xs font-semibold text-[#475569] mb-1.5">
+                        Postal / ZIP Code <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        name="postalCode"
+                        placeholder="Postal or ZIP code"
+                        value={guestAddress.postalCode}
+                        onChange={handleGuestAddressChange}
+                        className={inputCls}
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-[#475569] mb-1.5">
+                        Country <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="country"
+                        value={guestAddress.country}
+                        onChange={handleGuestAddressChange}
+                        className={inputCls}
+                        required
+                      >
+                        {COUNTRIES.map(c => (
+                          <option key={c} value={c}>{c}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-[#94a3b8] pt-2">
                     Already have an account?{' '}
                     <Link href="/login" className="text-[#1e3a5f] font-medium hover:underline">
                       Sign in
@@ -438,54 +626,60 @@ export default function CheckoutPage() {
             {/* Shipping Method */}
             <SectionCard icon={<Truck />} title="Shipping Method">
               <div className="space-y-3">
-                {shippingOptions.map((opt) => {
-                  const isSelected = selectedShipping?.id === opt.id;
-                  return (
-                    <label
-                      key={opt.id}
-                      className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-all ${
-                        isSelected
-                          ? 'border-[#1e3a5f] bg-[#1e3a5f]/04 shadow-sm'
-                          : 'border-[#dde4ee] hover:border-[#c8d4e4] hover:shadow-sm'
-                      }`}
-                    >
-                      <input
-                        type="radio"
-                        name="shipping"
-                        className="sr-only"
-                        checked={isSelected}
-                        onChange={() => setSelectedShipping(opt)}
-                      />
-                      {/* Custom radio */}
-                      <div
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                          isSelected ? 'border-[#1e3a5f]' : 'border-[#dde4ee]'
+                {shippingOptions.length === 0 ? (
+                  <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    No active shipping methods match the selected country/region ({selectedCountry}).
+                  </p>
+                ) : (
+                  shippingOptions.map((opt) => {
+                    const isSelected = selectedShipping?.id === opt.id;
+                    return (
+                      <label
+                        key={opt.id}
+                        className={`flex cursor-pointer items-center gap-4 rounded-xl border-2 p-4 transition-all ${
+                          isSelected
+                            ? 'border-[#1e3a5f] bg-[#1e3a5f]/04 shadow-sm'
+                            : 'border-[#dde4ee] hover:border-[#c8d4e4] hover:shadow-sm'
                         }`}
                       >
-                        {isSelected && (
-                          <div className="h-2.5 w-2.5 rounded-full bg-[#1e3a5f]" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-[#0f1a2e]">{opt.label}</p>
-                        {opt.estimate && (
-                          <p className="text-xs text-[#94a3b8]">{opt.estimate}</p>
-                        )}
-                      </div>
-                      <span
-                        className={`text-sm font-bold ${
-                          isSelected ? 'text-[#1e3a5f]' : 'text-[#0f1a2e]'
-                        }`}
-                      >
-                        {opt.cost === 0 ? (
-                          <span className="text-emerald-600">Free</span>
-                        ) : (
-                          formatPrice(opt.cost)
-                        )}
-                      </span>
-                    </label>
-                  );
-                })}
+                        <input
+                          type="radio"
+                          name="shipping"
+                          className="sr-only"
+                          checked={isSelected}
+                          onChange={() => setSelectedShipping(opt)}
+                        />
+                        {/* Custom radio */}
+                        <div
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                            isSelected ? 'border-[#1e3a5f]' : 'border-[#dde4ee]'
+                          }`}
+                        >
+                          {isSelected && (
+                            <div className="h-2.5 w-2.5 rounded-full bg-[#1e3a5f]" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-sm font-semibold text-[#0f1a2e]">{opt.label}</p>
+                          {opt.estimate && (
+                            <p className="text-xs text-[#94a3b8]">{opt.estimate}</p>
+                          )}
+                        </div>
+                        <span
+                          className={`text-sm font-bold ${
+                            isSelected ? 'text-[#1e3a5f]' : 'text-[#0f1a2e]'
+                          }`}
+                        >
+                          {opt.cost === 0 ? (
+                            <span className="text-emerald-600">Free</span>
+                          ) : (
+                            formatPrice(opt.cost)
+                          )}
+                        </span>
+                      </label>
+                    );
+                  })
+                )}
               </div>
             </SectionCard>
 
@@ -540,7 +734,7 @@ export default function CheckoutPage() {
                       )}
                     </span>
                   </div>
-                  {tax > 0 && (
+                  {taxRate !== null && (
                     <div className="flex justify-between text-sm">
                       <span className="text-[#64748b]">
                         Tax ({(taxRate * 100).toFixed(0)}%)
@@ -548,14 +742,7 @@ export default function CheckoutPage() {
                       <span className="font-semibold text-[#0f1a2e]">{formatPrice(tax)}</span>
                     </div>
                   )}
-                  {discount > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-emerald-600">Discount</span>
-                      <span className="font-semibold text-emerald-600">
-                        −{formatPrice(discount)}
-                      </span>
-                    </div>
-                  )}
+
 
                   {/* Divider */}
                   <div className="border-t border-[#f0f4f8] pt-3">
@@ -605,19 +792,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
 
-              {/* Gold accent tip */}
-              <div
-                className="rounded-xl border px-4 py-3 text-xs text-[#64748b]"
-                style={{ borderColor: 'rgba(200,168,75,0.25)', background: 'rgba(200,168,75,0.04)' }}
-              >
-                <p className="flex items-center gap-2">
-                  <span style={{ color: '#c8a84b' }}>✦</span>
-                  <span>
-                    Use code <span className="font-semibold text-[#c8a84b]">SAVE10</span> to get
-                    10% off your order!
-                  </span>
-                </p>
-              </div>
+
             </div>
           </div>
         </div>
